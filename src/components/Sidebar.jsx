@@ -17,7 +17,9 @@ const Sidebar = () => {
   const { isAuthenticated, setIsAuthenticated } = useContext(Context);
 
   const handleLogout = async () => {
-    await axios.get("https://jainam-hospital-backend.onrender.com/api/v1/user/admin/logout", {
+    await axios.get("https://jainam-hospital-backend.onrender.com/api/v1/user/admin/logout",
+     // "http://localhost:4000/api/v1/user/admin/logout",
+      {
         withCredentials: true,
       })
       .then((res) => {
@@ -58,13 +60,36 @@ const Sidebar = () => {
         style={!isAuthenticated ? { display: "none" } : { display: "flex" }}
         className={show ? "show sidebar" : "sidebar"}
       >
+        <div className="profile">
+        <img src="https://picsum.photos/100" alt="Doctor" />
+          <p>Welcome Back,</p>
+          
+        </div>
         <div className="links">
-          <TiHome onClick={gotoHomePage} />
-          <FaUserDoctor onClick={gotoDoctorsPage} />
-          <MdAddModerator onClick={gotoAddNewAdmin} />
-          <IoPersonAddSharp onClick={gotoAddNewDoctor} />
-          <AiFillMessage onClick={gotoMessagesPage} />
-          <RiLogoutBoxFill onClick={handleLogout} />
+          <div className="link-item" onClick={gotoHomePage}>
+            <TiHome />
+            <span>Dashboard</span>
+          </div>
+          <div className="link-item" onClick={gotoDoctorsPage}>
+            <FaUserDoctor />
+            <span>Doctors</span>
+          </div>
+          <div className="link-item" onClick={gotoAddNewAdmin}>
+            <MdAddModerator />
+            <span>Add Admin</span>
+          </div>
+          <div className="link-item" onClick={gotoAddNewDoctor}>
+            <IoPersonAddSharp />
+            <span>Add Doctor</span>
+          </div>
+          <div className="link-item" onClick={gotoMessagesPage}>
+            <AiFillMessage />
+            <span>Messages</span>
+          </div>
+          <div className="link-item" onClick={handleLogout}>
+            <RiLogoutBoxFill />
+            <span>Log Out</span>
+          </div>
         </div>
       </nav>
       <div
