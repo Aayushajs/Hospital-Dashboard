@@ -75,6 +75,8 @@ const Sidebar = () => {
     else if (path === "/admin/addnew") setActiveLink("addAdmin");
     else if (path === "/PatientsDashboard") setActiveLink("PatientsDashboard");
     else if (path === "/admin/profile") setActiveLink("profile");
+    else if (path == "/ChatRoom") setActiveLink("ChatRoom");
+    else setActiveLink("");
   }, [location]);
 
   const handleLogout = async () => {
@@ -103,6 +105,7 @@ const Sidebar = () => {
     {icon: <IoPersonAddSharp />, label: "Patients", path: "/PatientsDashboard", key: "PatientsDashboard" },
     { icon: <MdAddModerator />, label: "Add Admin", path: "/admin/addnew", key: "addAdmin" },
     { icon: <IoPersonAddSharp />, label: "Add Doctor", path: "/doctor/addnew", key: "addDoctor" },
+    { icon: <GiHamburgerMenu />, label: "Chat Room", path: "/ChatRoom", key: "ChatRoom" },
     { icon: <AiFillMessage />, label: "Feedback Messages", path: "/messages", key: "messages" },
   ];
 
@@ -644,7 +647,6 @@ const Sidebar = () => {
         .logout-container .nav-link:hover {
           background-color: rgba(220, 53, 69, 0.1);
         }
-
         .menu-toggle {
           position: fixed;
           top: 1rem;
