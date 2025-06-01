@@ -16,8 +16,8 @@ import {
   FiUser,
   FiCalendar,
   FiClock,
+  FiBell, FiChevronDown ,
   FiCheckCircle,
-  FiDollarSign,
   FiMail,
   FiPhone,
   FiUsers,
@@ -497,7 +497,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <style jsx>{`
+        <style jsx="true">{`
           .skeleton-loader {
             padding: 1.5rem;
             margin-left: 270px;
@@ -746,37 +746,36 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       {/* Top Header with Search, Notifications and Profile */}
-      <div className="dashboard-top-header">
-        <div
-          className="search-bar"
-          style={{ fontSize: "1.2rem", fontWeight: "bold" }}
-        >
-          WELCOME BACK{" "}
-          <span style={{ color: "green" }}>
-            {admin?.firstName?.toUpperCase()} {admin?.lastName?.toUpperCase()}
-          </span>
-        </div>
-        <div className="header-actions">
-          <button className="notification-btn">
-            <AiOutlineNotification />
-            <span className="notification-badge">3</span>
-          </button>
-          <div
-            className="profile-btn"
-            onClick={() => navigate("/admin/profile")}
-          >
-            <div className="avatar">
-              {admin?.firstName?.charAt(0).toUpperCase()}
-              {admin?.lastName?.charAt(0).toUpperCase()}
-            </div>
-            {!isMobile && (
-              <span className="profile-name">
-                {admin?.firstName?.toUpperCase()}
-              </span>
-            )}
-          </div>
-        </div>
+     <div className="dashboard-top-header">
+  <div className="header-title">
+    <h1>Dashboard</h1>
+    <p>Welcome back, <span className="admin-name">{admin?.firstName} {admin?.lastName}</span></p>
+  </div>
+  <div className="header-actions">
+    <button className="notification-btn">
+      <div className="notification-icon">
+        <FiBell />
+        <span className="notification-badge">3</span>
       </div>
+    </button>
+    <div 
+      className="profile-btn" 
+      onClick={() => navigate("/admin/profile")}
+    >
+      <div className="avatar">
+        {admin?.firstName?.charAt(0).toUpperCase()}
+        {admin?.lastName?.charAt(0).toUpperCase()}
+      </div>
+      {!isMobile && (
+        <div className="profile-info">
+          <span className="profile-name">{admin?.firstName}</span>
+          <span className="profile-role">Administrator</span>
+        </div>
+      )}
+      {!isMobile && <FiChevronDown className="dropdown-icon" />}
+    </div>
+  </div>
+</div>
 
       <div className="dashboard-header">
         <div className="welcome-section">
@@ -1264,7 +1263,7 @@ const Dashboard = () => {
                                                
                                                  <Lottie 
                                                    animationData={animationData} 
-                                                   style={{ marginLeft:"40%" , height: 200, width: 200, overflow: 'hidden' }} 
+                                                   style={{ marginLeft:"5%" , height: 200, width: 200, overflow: 'hidden' }} 
                                                  />
                                                  <p>No Appointments Found!</p>
                                             
@@ -1275,7 +1274,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx="true" >{`
         .dashboard-container {
           background-color: #1a1a2e;
           color: #e9ecef;
@@ -1285,82 +1284,183 @@ const Dashboard = () => {
         }
 
         /* Top Header Styles */
-        .dashboard-top-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #2d3748;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
+/* Top Header Styles */
+.dashboard-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(48, 59, 77, 0.9);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
 
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
+.header-title {
+  display: flex;
+  flex-direction: column;
+}
 
-        .notification-btn {
-          position: relative;
-          background: none;
-          border: none;
-          color: #adb5bd;
-          font-size: 1.35rem;
-          cursor: pointer;
-          transition: color 0.3s ease;
-        }
+.header-title h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #ffffff;
+  font-weight: 600;
+}
 
-        .notification-btn:hover {
-          color: white;
-        }
+.header-title p {
+  margin: 0.25rem 0 0;
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
 
-        .notification-badge {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          background-color: #dc3545;
-          color: white;
-          border-radius: 50%;
-          width: 18px;
-          height: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 0.6rem;
-          font-weight: bold;
-        }
+.admin-name {
+  color: #4ade80;
+  font-weight: 500;
+}
 
-        .profile-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          cursor: pointer;
-          transition: opacity 0.3s ease;
-        }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
 
-        .profile-btn:hover {
-          opacity: 0.8;
-        }
+.notification-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: #cbd5e0;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-        .avatar {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background-color: #0d6efd;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 0.9rem;
-        }
+.notification-btn:hover {
+  background-color: rgba(83, 194, 102, 0.3);
+}
 
-        .profile-name {
-          font-size: 0.9rem;
-          color: #e9ecef;
-        }
+.notification-icon {
+  position: relative;
+  font-size: 1.35rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: bold;
+  
+}
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+
+.profile-btn:hover {
+  background-color: rgba(74, 85, 104, 0.3);
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name {
+  font-size: 0.9rem;
+  color: #e9ecef;
+  font-weight: 500;
+}
+
+.profile-role {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.dropdown-icon {
+  color: #a0aec0;
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.profile-btn:hover .dropdown-icon {
+  transform: translateY(2px);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .dashboard-top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .profile-btn {
+    padding: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title h1 {
+    font-size: 1.3rem;
+    text-align: center;
+    justify-content: center;
+
+  }
+    .header-title p {
+      text-align: center;
+    justify-content: center;
+  color: #a0aec0;
+  font-size: 0.9rem;
+}
+  
+  .avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+      .profile-btn {
+    padding: 0.25rem;
+    margin-top: -0.5rem;
+  }
+
+}
+  
 
         /* Rest of the styles */
         .dashboard-header {
@@ -2086,6 +2186,7 @@ const Dashboard = () => {
           .dashboard-container {
             padding: 0.75rem;
           }
+         
 
           .stat-content {
             flex-direction: column;

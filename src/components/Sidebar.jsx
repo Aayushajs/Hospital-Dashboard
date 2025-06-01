@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import  { useContext, useState, useEffect, useRef } from "react";
 import { TiHome } from "react-icons/ti";
 import { RiLogoutBoxFill } from "react-icons/ri";
 import { AiFillMessage, AiOutlineSearch } from "react-icons/ai";
@@ -12,10 +12,10 @@ import { toast } from "react-toastify";
 import { Context } from "../main";
 import { useNavigate, useLocation } from "react-router-dom";
 import Lottie from "lottie-react";
-import animationData from "../../public/notfountAnimation.json"
+import animationData from "../../public/notfountAnimation.json";
 
 const Sidebar = () => {
-  const [show, setShow] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [loading, setLoading] = useState(true);
@@ -23,15 +23,16 @@ const Sidebar = () => {
   const { isAuthenticated, setIsAuthenticated, admin } = useContext(Context);
   const navigateTo = useNavigate();
   const location = useLocation();
+  const searchInputRef = useRef(null);
 
   // Check if mobile view
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
       if (window.innerWidth >= 768) {
-        setShow(true);
+        setShowSidebar(true);
       } else {
-        setShow(false);
+        setShowSidebar(false);
       }
     };
 
@@ -40,7 +41,7 @@ const Sidebar = () => {
     // Set loading to false after 1 second
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 3000);
+    }, 1000);
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -76,7 +77,7 @@ const Sidebar = () => {
 
   const navigate = (path) => {
     navigateTo(path);
-    if (isMobile) setShow(false);
+    if (isMobile) setShowSidebar(false);
   };
 
   const navItems = [
@@ -93,42 +94,52 @@ const Sidebar = () => {
   const filteredNavItems = navItems.filter(item =>
     item.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
+  // Focus search input when sidebar opens
+  useEffect(() => {
+    if (showSidebar && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showSidebar]);
+
+  const handleSearchClick = (e) => {
+    e.stopPropagation(); // Prevent click from bubbling to sidebar
+  };
 
   if (!isAuthenticated) return null;
 
   if (loading) {
     return (
-      <div className="sidebar-skeleton">
-        <div className="skeleton-header">
-          <div className="skeleton-logo"></div>
-          <div className="skeleton-company">
-            <div className="skeleton-text" style={{ width: '120px', height: '20px' }}></div>
-            <div className="skeleton-text" style={{ width: '80px', height: '16px', marginTop: '8px' }}></div>
+      <div className="sidebar-loading">
+        <div className="loading-header">
+          <div className="loading-logo"></div>
+          <div className="loading-company">
+            <div className="loading-text" style={{ width: '120px', height: '20px' }}></div>
+            <div className="loading-text" style={{ width: '80px', height: '16px', marginTop: '8px' }}></div>
           </div>
         </div>
         
-        <div className="skeleton-search">
-          <div className="skeleton-search-icon"></div>
-          <div className="skeleton-search-input"></div>
+        <div className="loading-search">
+          <div className="loading-search-icon"></div>
+          <div className="loading-search-input"></div>
         </div>
         
-        <div className="skeleton-nav">
+        <div className="loading-nav">
           {[1, 2, 3, 4, 5,6,7].map((item) => (
-            <div key={item} className="skeleton-nav-item">
-              <div className="skeleton-icon"></div>
-              <div className="skeleton-text" style={{ width: '70%', height: '16px' }}></div>
+            <div key={item} className="loading-nav-item">
+              <div className="loading-icon"></div>
+              <div className="loading-text" style={{ width: '70%', height: '16px' }}></div>
             </div>
           ))}
         </div>
         
-        <div className="skeleton-logout">
-          <div className="skeleton-icon"></div>
-          <div className="skeleton-text" style={{ width: '70%', height: '16px' }}></div>
+        <div className="loading-logout">
+          <div className="loading-icon"></div>
+          <div className="loading-text" style={{ width: '70%', height: '16px' }}></div>
         </div>
 
-        <style jsx>{`
-          .sidebar-skeleton {
+        <style jsx="true">{`
+          .sidebar-loading {
             position: fixed;
             top: 0;
             left: 0;
@@ -141,14 +152,14 @@ const Sidebar = () => {
             flex-direction: column;
           }
 
-          .skeleton-header {
+          .loading-header {
             display: flex;
             align-items: center;
             gap: 1rem;
             margin-bottom: 2rem;
           }
 
-          .skeleton-logo {
+          .loading-logo {
             width: 50px;
             height: 50px;
             border-radius: 8px;
@@ -157,18 +168,18 @@ const Sidebar = () => {
             animation: shimmer 1.5s infinite;
           }
 
-          .skeleton-company {
+          .loading-company {
             flex: 1;
           }
 
-          .skeleton-text {
+          .loading-text {
             background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
             border-radius: 4px;
           }
 
-          .skeleton-search {
+          .loading-search {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -178,7 +189,7 @@ const Sidebar = () => {
             border-radius: 6px;
           }
 
-          .skeleton-search-icon {
+          .loading-search-icon {
             width: 20px;
             height: 20px;
             background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
@@ -187,7 +198,7 @@ const Sidebar = () => {
             border-radius: 50%;
           }
 
-          .skeleton-search-input {
+          .loading-search-input {
             flex: 1;
             height: 20px;
             background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
@@ -196,21 +207,21 @@ const Sidebar = () => {
             border-radius: 4px;
           }
 
-          .skeleton-nav {
+          .loading-nav {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
           }
 
-          .skeleton-nav-item {
+          .loading-nav-item {
             display: flex;
             align-items: center;
             gap: 1rem;
             padding: 0.8rem;
           }
 
-          .skeleton-icon {
+          .loading-icon {
             width: 24px;
             height: 24px;
             background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
@@ -219,7 +230,7 @@ const Sidebar = () => {
             border-radius: 4px;
           }
 
-          .skeleton-logout {
+          .loading-logout {
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -237,7 +248,7 @@ const Sidebar = () => {
           }
 
           @media (max-width: 768px) {
-            .sidebar-skeleton {
+            .sidebar-loading {
               width: 250px;
             }
           }
@@ -249,30 +260,30 @@ const Sidebar = () => {
   return (
     <>
       {/* Overlay for mobile when sidebar is open */}
-      {show && isMobile && (
+      {showSidebar && isMobile && (
         <div 
           className="sidebar-overlay"
-          onClick={() => setShow(false)}
+          onClick={() => setShowSidebar(false)}
         />
       )}
 
       {/* Sidebar */}
-      <nav className={`sidebar ${show ? "show" : ""}`}>
+      <nav className={`sidebar-container ${showSidebar ? "show" : ""}`}>
         <div className="sidebar-header">
-          <div className="company-brand">
+          <div className="brand-container">
             <img 
-              src="https://t4.ftcdn.net/jpg/08/44/82/55/360_F_844825587_MEoU8odal1uKKTjNOoFa0A4yLyZzJ0gG.jpg" // Replace with your hospital logo
+              src="https://t4.ftcdn.net/jpg/08/44/82/55/360_F_844825587_MEoU8odal1uKKTjNOoFa0A4yLyZzJ0gG.jpg"
               alt="Hospital Logo" 
-              className="company-logo"
+              className="brand-logo"
             />
-            <div className="company-info">
-              <h4 className="company-name">Jainam Hospital</h4>
-              <p className="company-tagline">Quality Healthcare</p>
+            <div className="brand-info">
+              <h4 className="brand-name">Jainam Hospital</h4>
+              <p className="brand-tagline">Quality Healthcare</p>
             </div>
           </div>
           <button 
-            className="close-btn"
-            onClick={() => setShow(false)}
+            className="close-button"
+            onClick={() => setShowSidebar(false)}
             aria-label="Close sidebar"
           >
             &times;
@@ -280,69 +291,66 @@ const Sidebar = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="search-container">
+        <div className="search-wrapper" onClick={handleSearchClick}>
           <AiOutlineSearch className="search-icon" />
           <input
             type="text"
             placeholder="Search menu..."
-            className="search-input"
+            className="search-field"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            ref={searchInputRef}
           />
         </div>
 
-        <div className="nav-links">
+        <div className="navigation-links">
           {filteredNavItems.length > 0 ? (
             filteredNavItems.map((item) => (
               <div
                 key={item.key}
-                className={`nav-item ${activeLink === item.key ? "active" : ""}`}
+                className={`nav-link ${activeLink === item.key ? "active" : ""}`}
                 onClick={() => navigate(item.path)}
               >
-                <div className="nav-icon">{item.icon}</div>
-                <span className="nav-label">{item.label}</span>
-                <FiChevronRight className="nav-chevron" />
+                <div className="link-icon">{item.icon}</div>
+                <span className="link-text">{item.label}</span>
+                <FiChevronRight className="link-arrow" />
               </div>
             ))
           ) : (
-             <tr>
-                              <td colSpan="10" className="no-data">
-                                <div className="empty-state">
-                                  <Lottie 
-                                    animationData={animationData} 
-                                    style={{ height: 200, width: 200, overflow: 'hidden' }} 
-                                  />
-                                  <p>Nofound</p>
-                                </div>
-                              </td>
-                            </tr>
+            <div className="no-results">
+              <Lottie 
+                animationData={animationData} 
+                style={{ height: 200, width: 200, overflow: 'hidden' }} 
+              />
+              <p>No results found</p>
+            </div>
           )}
         </div>
 
-        <div className="logout-section">
+        <div className="logout-container">
           <div 
-            className="nav-item logout"
+            className="nav-link logout"
             onClick={handleLogout}
           >
-            <div className="nav-icon">
+            <div className="link-icon">
               <RiLogoutBoxFill />
             </div>
-            <span className="nav-label">Log Out</span>
+            <span className="link-text">Log Out</span>
           </div>
         </div>
       </nav>
 
       {/* Hamburger menu */}
       <button 
-        className="hamburger-menu"
-        onClick={() => setShow(!show)}
+        className="menu-toggle"
+        onClick={() => setShowSidebar(!showSidebar)}
         aria-label="Toggle sidebar"
       >
         <GiHamburgerMenu />
       </button>
 
-      <style jsx>{`
-        .sidebar {
+      <style jsx="true">{`
+        .sidebar-container {
           position: fixed;
           top: 0;
           left: 0;
@@ -359,7 +367,7 @@ const Sidebar = () => {
           border-right: 1px solid #2d3748;
         }
 
-        .sidebar.show {
+        .sidebar-container.show {
           transform: translateX(0);
         }
 
@@ -377,105 +385,43 @@ const Sidebar = () => {
           padding: 1.5rem;
           border-bottom: 1px solid #2d3748;
           position: relative;
+          display: flex;
+          align-items: center;
         }
 
-        .company-brand {
+        .brand-container {
           display: flex;
           align-items: center;
           gap: 1rem;
-        }
-
-        .company-logo {
-          width: 50px;
-          height: 50px;
-          border-radius: 50px;
-          object-fit: cover;
-        }
-
-        .company-info {
           flex: 1;
         }
 
-        .company-name {
+        .brand-logo {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid #4d7cfe;
+        }
+
+        .brand-info {
+          flex: 1;
+        }
+
+        .brand-name {
           margin: 0;
           font-size: 1.1rem;
           color: white;
           font-weight: 600;
         }
 
-        .company-tagline {
+        .brand-tagline {
           margin: 0.2rem 0 0;
           font-size: 0.8rem;
           color: #adb5bd;
         }
 
-.search-container {
-  position: relative;
-   margin-left: -0.65rem;
-  padding: 0.5rem 1.2rem;
-}
-
-.search-icon {
-  position: absolute;
-  left: 30px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #adb5bd;
-  font-size: 1.5rem;
-  transition: color 0.3s ease;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  background-color: #0f3460;
-  border: 2px solid #2d3748;
-  border-radius: 8px;
-  color: #f8f9fa;
-  font-size: 0.95rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.search-input:hover {
-  border-color: #3d4b64;
-  background-color: #0d2b57;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #0d6efd;
-  background-color: #0a2247;
-  box-shadow: 
-    0 0 0 3px rgba(13, 110, 253, 0.25),
-    inset 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.search-input::placeholder {
-  color: #6c757d;
-  opacity: 1;
-  font-weight: 400;
-  letter-spacing: 0.2px;
-}
-
-/* For dark mode compatibility */
-@media (prefers-color-scheme: dark) {
-  .search-input {
-    background-color: #0a2247;
-    border-color: #36445c;
-  }
-  
-  .search-input:hover {
-    background-color: #081d3d;
-    border-color: #435572;
-  }
-  
-  .search-icon {
-    color: #8e9aaf;
-  }
-}
-
-        .close-btn {
+        .close-button {
           position: absolute;
           top: 1rem;
           right: 1rem;
@@ -485,95 +431,175 @@ const Sidebar = () => {
           font-size: 1.5rem;
           cursor: pointer;
           display: none;
+          transition: color 0.2s ease;
         }
 
-        .nav-links {
-          flex: 1;
-          padding: 1rem 0;
-          overflow-y: auto;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          padding: 0.8rem 1.5rem;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          position: relative;
-        }
-
-        .nav-item:hover {
-          background-color: #0f3460;
-        }
-
-        .nav-item.active {
-          background-color: #0d6efd;
-        }
-
-        .nav-item.active .nav-icon {
+        .close-button:hover {
           color: white;
         }
 
-        .nav-item.active .nav-label {
+        .search-wrapper {
+          position: relative;
+          margin: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #4d7cfe;
+          font-size: 1.2rem;
+          transition: color 0.3s ease;
+        }
+
+        .search-field {
+          width: 100%;
+          padding: 0.75rem 1rem 0.75rem 2.5rem;
+          background-color: #0f3460;
+          border: 2px solid #2d3748;
+          border-radius: 8px;
+          color: #f8f9fa;
+          font-size: 0.95rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-field:hover {
+          border-color: #3d4b64;
+          background-color: #0d2b57;
+        }
+
+        .search-field:focus {
+          outline: none;
+          border-color: #4d7cfe;
+          background-color: #0a2247;
+          box-shadow: 
+            0 0 0 3px rgba(77, 124, 254, 0.25),
+            inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .search-field::placeholder {
+          color: #6c757d;
+          opacity: 1;
+          font-weight: 400;
+          letter-spacing: 0.2px;
+        }
+
+        .navigation-links {
+          flex: 1;
+          padding: 0.5rem 0;
+          overflow-y: auto;
+        }
+
+        .nav-link {
+          display: flex;
+          align-items: center;
+          padding: 0.9rem 1.5rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          position: relative;
+          margin: 0.25rem 0;
+        }
+
+        .nav-link:hover {
+          background-color: #0f3460;
+        }
+
+        .nav-link.active {
+          background-color: #4d7cfe;
+        }
+
+        .nav-link.active .link-icon {
+          color: white;
+        }
+
+        .nav-link.active .link-text {
           color: white;
           font-weight: 500;
         }
 
-        .nav-item.active .nav-chevron {
+        .nav-link.active .link-arrow {
           opacity: 1;
           transform: translateX(0);
         }
 
-        .nav-icon {
-          font-size: 1.2rem;
+        .link-icon {
+          font-size: 1.3rem;
           margin-right: 1rem;
-          color: #adb5bd;
+          color: #7f8c8d;
           transition: color 0.2s ease;
+          min-width: 24px;
+          display: flex;
+          justify-content: center;
         }
 
-        .nav-label {
+        .nav-link:hover .link-icon,
+        .nav-link.active .link-icon {
+          color: white;
+        }
+
+        .link-text {
           flex: 1;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
           color: #e9ecef;
           transition: color 0.2s ease;
         }
 
-        .nav-chevron {
+        .link-arrow {
           font-size: 0.9rem;
           opacity: 0;
           transform: translateX(-5px);
           transition: all 0.2s ease;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-link:hover .link-arrow {
+          opacity: 1;
+          transform: translateX(0);
         }
 
         .no-results {
-          padding: 1rem 1.5rem;
+          padding: 2rem 1.5rem;
           color: #6c757d;
           font-size: 0.9rem;
           text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
 
-        .logout-section {
+        .no-results p {
+          margin-top: 1rem;
+          color: #adb5bd;
+          font-size: 1rem;
+        }
+
+        .logout-container {
           padding: 1rem 0;
           border-top: 1px solid #2d3748;
+          margin-top: auto;
         }
 
-        .logout-section .nav-item {
-          color: #dc3545;
+        .logout-container .nav-link {
+          color: #ff6b6b;
         }
 
-        .logout-section .nav-icon {
-          color: #dc3545;
+        .logout-container .link-icon {
+          color: #ff6b6b;
         }
 
-        .logout-section .nav-item:hover {
+        .logout-container .nav-link:hover {
           background-color: rgba(220, 53, 69, 0.1);
         }
 
-        .hamburger-menu {
+        .menu-toggle {
           position: fixed;
           top: 1rem;
           left: 1rem;
-          background-color: #16213e;
+          background-color: #4d7cfe;
           color: white;
           border: none;
           border-radius: 5px;
@@ -582,48 +608,54 @@ const Sidebar = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.5rem;
+          font-size: 1.3rem;
           cursor: pointer;
           z-index: 100;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
           transition: all 0.3s ease;
         }
 
-        .hamburger-menu:hover {
-          background-color: #0f3460;
+        .menu-toggle:hover {
+          background-color: #3a6aed;
           transform: scale(1.05);
         }
 
         @media (max-width: 768px) {
-          .close-btn {
+          .close-button {
             display: block;
+          }
+          
+          .sidebar-container {
+            width: 260px;
           }
         }
 
         @media (min-width: 769px) {
-          .sidebar {
+          .sidebar-container {
             transform: translateX(0);
           }
           
-          .hamburger-menu {
+          .menu-toggle {
             display: none;
           }
         }
 
         @media (max-width: 480px) {
-          .sidebar {
-            width: 250px;
-          }
-          
-          .company-brand {
+          .brand-container {
             flex-direction: row;
-            justify-content: flex-start;
-            align-items: flex-start;
           }
           
-          .company-logo {
-            width: 40px;
-            height: 40px;
+          .brand-logo {
+            width: 45px;
+            height: 45px;
+          }
+          
+          .brand-name {
+            font-size: 1rem;
+          }
+          
+          .brand-tagline {
+            font-size: 0.75rem;
           }
         }
       `}</style>

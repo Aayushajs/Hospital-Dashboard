@@ -104,7 +104,7 @@ const ProfilePage = () => {
       }}> 
           <Lottie 
             animationData={loadingAnimation} 
-            style={{ height: 300, width: 300, marginLeft:"50%", marginTop:"17%", position: 'absolute', overflow: 'hidden' }}
+            style={{ height: 300, width: 300, marginLeft:"10%", marginTop:"30%", position: 'absolute', overflow: 'hidden' }}
           />
           <p>Loading your profile...</p>
        
@@ -243,7 +243,7 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          <div className="action-buttons">
+          <div className="action-buttons1">
             {isEditing ? (
               <button className="save-btn" onClick={handleSave}>
                 <FiSave /> Save Changes
@@ -315,32 +315,8 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <style jsx>{`
-        /* Loading Screen */
-        .loading-screen {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #1a1a2e;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
-        
-        .loading-content {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        
-        .loading-screen p {
-          margin-top: 1rem;
-          color: #e9ecef;
-          font-size: 1.2rem;
-        }
+      <style jsx="true">{`
+  
 
         /* Main Container */
         .profile-container {
@@ -511,7 +487,7 @@ const ProfilePage = () => {
         }
 
         /* Action Buttons */
-        .action-buttons {
+        .action-buttons1 {
           display: flex;
           gap: 1rem;
           margin-top: 2rem;
@@ -520,22 +496,20 @@ const ProfilePage = () => {
           justify-content: center;
         }
 
-        button {
+       
+
+        .edit-btn {
+          background-color: #4f46e5;
+          color: white;
           padding: 0.75rem 1.5rem;
           border-radius: 6px;
           font-size: 1rem;
           font-weight: 500;
-          display: flex;
           align-items: center;
           gap: 0.5rem;
           border: none;
           cursor: pointer;
           transition: background-color 0.2s ease;
-        }
-
-        .edit-btn {
-          background-color: #4f46e5;
-          color: white;
         }
 
         .edit-btn:hover {
@@ -554,6 +528,15 @@ const ProfilePage = () => {
         .download-btn {
           background-color: #8b5cf6;
           color: white;
+          padding: 0.75rem 1.5rem;
+          border-radius: 6px;
+          font-size: 1rem;
+          font-weight: 500;
+          align-items: center;
+          gap: 0.5rem;
+          border: none;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
         }
 
         .download-btn:hover {
@@ -708,7 +691,7 @@ const ProfilePage = () => {
             padding: 1.5rem;
           }
           
-          .action-buttons {
+          .action-buttons1 {
             flex-direction: column;
           }
         }
@@ -729,6 +712,7 @@ const ProfilePage = () => {
           .welcome-content h1 {
             font-size: 1.3rem;
              margin-top: 10px;
+             margin-left: 50px;
           }
           
           .profile-animation {

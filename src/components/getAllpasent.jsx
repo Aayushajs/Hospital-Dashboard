@@ -464,7 +464,7 @@ const PatientsDashboard = () => {
         
         .search-icon {
           position: absolute;
-          left: 25px;
+          left: 10px;
           color: #adb5bd;
         }
         
@@ -525,12 +525,10 @@ const PatientsDashboard = () => {
         }
         
         .no-data {
-          text-align: center;
           padding: 1rem;
         }
         
         .empty-state {
-          display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
@@ -588,6 +586,7 @@ const PatientsDashboard = () => {
           .chart-container {
             height: 200px;
           }
+        
         }
       `}</style>
     </div>

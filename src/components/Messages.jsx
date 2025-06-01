@@ -1,13 +1,16 @@
 import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { Context } from "../main";
+import { Context } from "../main"; // Assuming Context is correctly imported
 import { Navigate } from "react-router-dom";
-import { FaEnvelope, FaUser, FaPhone, FaComment, FaTrash, FaReply, FaCalendarAlt } from "react-icons/fa";
+import { 
+  FaEnvelope, FaUser, FaPhone, FaComment, FaTrash, FaReply, 
+  FaCalendarAlt, FaSearch, FaInbox, FaCalendarDay, FaClock 
+} from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import Lottie from "lottie-react";
-import loadingAnimation from "../../public/loding.json";
-import emptyAnimation from "../../public/notfountAnimation.json";
+import loadingAnimation from "../../public/loding.json"; // Ensure this path is correct
+import emptyAnimation from "../../public/notfountAnimation.json"; // Ensure this path is correct
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -16,41 +19,85 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useContext(Context);
 
+  const [todayMessagesCount, setTodayMessagesCount] = useState(0);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer); // Cleanup interval on component unmount
+  }, []);
+
   useEffect(() => {
     const fetchMessages = async () => {
+      setLoading(true);
       try {
         const { data } = await axios.get(
           "https://jainam-hospital-backend.onrender.com/api/v1/message/getall",
           { withCredentials: true }
         );
-        setMessages(data.messages);
+        setMessages(data.messages || []); // Ensure messages is an array
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to fetch messages");
+        setMessages([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchMessages();
-  }, []);
+    if (isAuthenticated) {
+      fetchMessages();
+    } else {
+      setLoading(false); // If not authenticated, stop loading
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const today = new Date();
+      const count = messages.filter(message => {
+        const messageDate = new Date(message.createdAt);
+        return (
+          messageDate.getFullYear() === today.getFullYear() &&
+          messageDate.getMonth() === today.getMonth() &&
+          messageDate.getDate() === today.getDate()
+        );
+      }).length;
+      setTodayMessagesCount(count);
+    } else {
+      setTodayMessagesCount(0);
+    }
+  }, [messages]);
+
 
   const filteredMessages = messages.filter(message => {
     const searchLower = searchTerm.toLowerCase();
+    // Ensure message fields exist before calling toLowerCase
     return (
-      message.firstName.toLowerCase().includes(searchLower) ||
-      message.lastName.toLowerCase().includes(searchLower) ||
-      message.email.toLowerCase().includes(searchLower) ||
-      message.phone.toLowerCase().includes(searchLower) ||
-      message.message.toLowerCase().includes(searchLower)
+      (message.firstName && message.firstName.toLowerCase().includes(searchLower)) ||
+      (message.lastName && message.lastName.toLowerCase().includes(searchLower)) ||
+      (message.email && message.email.toLowerCase().includes(searchLower)) ||
+      (message.phone && message.phone.toLowerCase().includes(searchLower)) ||
+      (message.message && message.message.toLowerCase().includes(searchLower))
     );
   });
 
   const handleDelete = async (id) => {
+    if (!selectedMessage || selectedMessage._id !== id) {
+        // To allow deleting from card directly, we'd need to pass the message object to delete
+        // or find it. For now, enforce selection.
+        toast.warn("Please select the message in the detail view to delete.");
+        return;
+    }
+    const isConfirmed = window.confirm("Are you sure you want to delete this message?");
+    if (!isConfirmed) return;
+
     try {
       await axios.delete(
         `https://jainam-hospital-backend.onrender.com/api/v1/message/delete/${id}`,
         { withCredentials: true }
       );
-      setMessages(messages.filter(msg => msg._id !== id));
+      setMessages(prevMessages => prevMessages.filter(msg => msg._id !== id));
       if (selectedMessage && selectedMessage._id === id) {
         setSelectedMessage(null);
       }
@@ -61,10 +108,14 @@ const Messages = () => {
   };
 
   const handleReply = (email) => {
+    if(!email) {
+        toast.error("No email address found for this message.");
+        return;
+    }
     window.location.href = `mailto:${email}`;
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !loading) { // Prevent redirect flicker if loading
     return <Navigate to={"/login"} />;
   }
 
@@ -73,25 +124,26 @@ const Messages = () => {
       <div className="loading-container">
         <Lottie 
           animationData={loadingAnimation} 
-          style={{ overflow:"hidden", height: 400, width: 400, marginLeft: "10%" }}
+          loop={true}
+          autoplay={true}
+          style={{ height: 300, width: 300, overflow: 'hidden' }}
         />
-        <p>Loading messages...</p>
-        
+        <p>Loading Messages...</p>
         <style jsx>{`
           .loading-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            height: 100vh; /* Full viewport height */
             background-color: #1a1a2e;
-            color: #e9ecef;
+            color: #e0e0e0;
+            /* margin-left is removed for full screen loading, or adjust if sidebar is persistent */
           }
-          
           .loading-container p {
-            margin-top: -5rem;
-            font-size: 1.2rem;
-            margin-left: 10%;
+            margin-top: 0.3rem;
+            font-size: 1.25rem;
+            font-weight: 500;
           }
         `}</style>
       </div>
@@ -100,503 +152,613 @@ const Messages = () => {
 
   return (
     <div className="dashboard-container">
-      <div className="messages-wrapper">
-        <div className="messages-header">
-          <div className="header-content">
-            <FaEnvelope className="header-icon" />
-            <h2>Patient Messages</h2>
-            <p>Review and manage all patient inquiries and feedback</p>
+      <div className="metrics-bar">
+        <div className="metric-card total-messages">
+          <FaInbox className="metric-icon1" />
+          <div className="metric-info">
+            <h4>Total Messages</h4>
+            <p>{messages.length}</p>
           </div>
-          
-          <div className="search-container">
+        </div>
+        <div className="metric-card todays-messages">
+          <FaCalendarDay className="metric-icon2" />
+          <div className="metric-info">
+            <h4>Today's Messages</h4>
+            <p>{todayMessagesCount}</p>
+          </div>
+        </div>
+        <div className="metric-card current-time">
+          <FaClock className="metric-icon3" />
+          <div className="metric-info">
+            <h4>{currentDateTime.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+            <p>{currentDateTime.toLocaleTimeString()}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="messages-wrapper">
+        <div className="messages-toolbar">
+          <div className="header-title-group">
+            <FaEnvelope className="header-main-icon" />
+            <div className="header-text">
+              <h2>Patient Messages</h2>
+              <p>Review and manage patient inquiries and feedback.</p>
+            </div>
+          </div>
+          <div className="search-bar-wrapper">
+            <FaSearch className="search-icon-input" />
             <input
               type="text"
               placeholder="Search messages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <FaComment className="search-icon" />
           </div>
         </div>
         
-        <div className="messages-content">
-          <div className="messages-list">
+        <div className="messages-layout">
+          <div className="messages-list-panel">
             {filteredMessages.length > 0 ? (
               filteredMessages.map((message) => (
                 <div 
                   className={`message-card ${selectedMessage?._id === message._id ? 'active' : ''}`}
                   key={message._id}
                   onClick={() => setSelectedMessage(message)}
+                  tabIndex={0} // Make it focusable
+                  onKeyPress={(e) => e.key === 'Enter' && setSelectedMessage(message)} // Accessibility
                 >
-                  <div className="message-header">
-                    <div className="sender-info">
-                      <FaUser className="icon" />
-                      <span>{message.firstName} {message.lastName}</span>
+                  <div className="card-header">
+                    <div className="sender-avatar">
+                        {message.firstName?.charAt(0)}{message.lastName?.charAt(0)}
                     </div>
-                    <div className="message-date">
-                      {new Date(message.createdAt).toLocaleDateString()}
-                    </div>
+                    <span className="sender-name">{message.firstName} {message.lastName}</span>
+                    <span className="message-date">{new Date(message.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="message-preview">
-                    <p>{message.message.substring(0, 60)}...</p>
-                  </div>
-                  <div className="message-footer">
-                    <div className="message-email">
-                      <MdEmail className="icon" />
-                      <span>{message.email}</span>
-                    </div>
+                  <p className="message-preview">{message.message.substring(0, 70)}{message.message.length > 70 ? "..." : ""}</p>
+                  <div className="card-footer">
+                    <MdEmail className="icon email-icon" />
+                    <span className="sender-email">{message.email}</span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="no-messages">
+              <div className="empty-state">
                 <Lottie 
                   animationData={emptyAnimation} 
-                  style={{ height: 200, width: 200, overflow: "hidden" }}
+                  loop={true}
+                  autoplay={true}
+                  style={{ height: 180, width: 180, overflow: 'hidden' }}
                 />
-                <h3>No Messages Found</h3>
-                <p>Try adjusting your search criteria</p>
+                <h3>{searchTerm ? "No Messages Match Your Search" : "Inbox is Empty"}</h3>
+                <p>{searchTerm ? "Try different keywords or clear the search." : "There are currently no messages to display."}</p>
               </div>
             )}
           </div>
           
-          <div className="message-detail">
+          <div className="message-detail-panel">
             {selectedMessage ? (
-              <div className="detail-card">
+              <div className="detail-content-wrapper">
                 <div className="detail-header">
                   <h3>Message Details</h3>
                   <div className="action-buttons">
                     <button 
-                      className="reply-btn"
+                      className="action-btn reply-btn"
                       onClick={() => handleReply(selectedMessage.email)}
+                      title="Reply via Email"
                     >
                       <FaReply /> Reply
                     </button>
                     <button 
-                      className="delete-btn"
+                      className="action-btn delete-btn"
                       onClick={() => handleDelete(selectedMessage._id)}
+                      title="Delete Message"
                     >
                       <FaTrash /> Delete
                     </button>
                   </div>
                 </div>
                 
-                <div className="sender-details">
-                  <div className="detail-item">
-                    <FaUser className="icon" />
+                <div className="sender-info-grid">
+                  <div className="info-item">
+                    <FaUser className="info-icon" />
                     <div>
-                      <label>Name</label>
+                      <label>Full Name</label>
                       <p>{selectedMessage.firstName} {selectedMessage.lastName}</p>
                     </div>
                   </div>
-                  
-                  <div className="detail-item">
-                    <MdEmail className="icon" />
+                  <div className="info-item">
+                    <MdEmail className="info-icon" />
                     <div>
-                      <label>Email</label>
+                      <label>Email Address</label>
                       <p>{selectedMessage.email}</p>
                     </div>
                   </div>
-                  
-                  <div className="detail-item">
-                    <FaPhone className="icon" />
+                  <div className="info-item">
+                    <FaPhone className="info-icon" />
                     <div>
-                      <label>Phone</label>
-                      <p>{selectedMessage.phone}</p>
+                      <label>Phone Number</label>
+                      <p>{selectedMessage.phone || "N/A"}</p>
                     </div>
                   </div>
-                  
-                  <div className="detail-item">
-                    <FaCalendarAlt className="icon" />
+                  <div className="info-item">
+                    <FaCalendarAlt className="info-icon" />
                     <div>
-                      <label>Date Sent</label>
+                      <label>Date Received</label>
                       <p>{new Date(selectedMessage.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
                 
-                <div className="message-content">
-                  <label>Message</label>
-                  <div className="message-text">
+                <div className="message-full-content">
+                  <label>Full Message</label>
+                  <div className="message-text-area">
                     {selectedMessage.message}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="select-message-prompt">
-                <FaEnvelope className="prompt-icon" />
-                <h3>Select a message to view details</h3>
-                <p>Click on any message from the list to see its full content</p>
+              <div className="select-prompt">
+                <FaEnvelope className="prompt-icon-main" />
+                <h3>Select a Message</h3>
+                <p>Click on a message from the list to view its details and take actions.</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx="true" global="true">{` // Using global for body to ensure no extra scrollbars
+        body {
+          overflow-x: hidden; /* Prevent horizontal scroll on body */
+        }
+      `}</style>
+      <style jsx="true">{`
         .dashboard-container {
-          background-color: #1a1a2e;
-          color: #e9ecef;
+          background-color: #1a1a2e; /* Main background */
+          color: #e0e0e0; /* Primary text color */
           min-height: 100vh;
-          padding: 2rem;
-          margin-left: 270px;
+          padding: 1.5rem 2rem; /* Adjusted padding */
+          margin-left: 270px; /* Assuming sidebar width */
+          font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
+          overflow: hidden; /* Main container overflow hidden */
         }
-        
+
+        .metrics-bar {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid */
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+        .metric-card {
+          background: linear-gradient(145deg, #1e2a4a, #16213e); /* Subtle gradient */
+          padding: 1.5rem;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 1.25rem; /* Increased gap */
+          box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .metric-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 25px rgba(77, 124, 254, 0.2);
+        }
+        .metric-icon1 {
+          font-size: 2.8rem; /* Larger icons */
+          color:rgb(64, 206, 66);
+          flex-shrink: 0; /* Prevent icon shrinking */
+        }
+           .metric-icon2 {
+          font-size: 2.8rem; /* Larger icons */
+          color:rgba(233, 254, 77, 0.88);
+          flex-shrink: 0; /* Prevent icon shrinking */
+        }
+           .metric-icon3 {
+          font-size: 2.8rem; /* Larger icons */
+          color:rgb(254, 77, 183);
+          flex-shrink: 0; /* Prevent icon shrinking */
+        }
+        .metric-info h4 {
+          margin: 0 0 0.35rem 0;
+          color: #bac8dc; /* Lighter title color */
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .metric-info p {
+          margin: 0;
+          font-size: 1.8rem; /* Prominent value */
+          font-weight: 700; /* Bold value */
+          color: #ffffff;
+          line-height: 1.2;
+        }
+        .metric-card.current-time .metric-info p { font-size: 1.5rem; } /* Adjust size for time */
+        .metric-card.current-time .metric-info h4 { font-size: 0.8rem; text-transform:none; letter-spacing: 0;}
+
+
         .messages-wrapper {
-          background-color: #16213e;
-          border-radius: 10px;
+          background-color: #16213e; /* Consistent dark panel background */
+          border-radius: 16px; /* Slightly more rounded */
           padding: 2rem;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 8px 30px rgba(0,0,0,0.35);
         }
         
-        .messages-header {
+        .messages-toolbar {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 2rem;
           flex-wrap: wrap;
+          gap: 1.5rem;
+        }
+        
+        .header-title-group {
+          display: flex;
+          align-items: center;
           gap: 1rem;
         }
-        
-        .header-content {
-          display: flex;
-          flex-direction: column;
-        }
-        
-        .header-icon {
-          font-size: 2rem;
+        .header-main-icon {
+          font-size: 2.8rem;
           color: #4d7cfe;
-          margin-bottom: 0.5rem;
+          padding: 0.5rem;
+          background-color: rgba(77, 124, 254, 0.1);
+          border-radius: 8px;
         }
-        
-        .messages-header h2 {
-          color: white;
-          margin: 0.25rem 0;
-          font-size: 1.8rem;
-        }
-        
-        .messages-header p {
-          color: #adb5bd;
+        .header-text h2 {
+          color: #ffffff;
           margin: 0;
+          font-size: 1.9rem; /* Larger heading */
+          font-weight: 600;
+        }
+        .header-text p {
+          color: #adb5bd;
+          margin: 0.25rem 0 0 0;
+          font-size: 0.95rem;
         }
         
-        .search-container {
+        .search-bar-wrapper {
           position: relative;
-          min-width: 250px;
+          display: flex;
+          align-items: center;
+          min-width: 320px; /* Wider search bar */
         }
-        
-        .search-container input {
-          padding: 0.75rem 1rem 0.75rem 2.5rem;
-          border-radius: 6px;
+        .search-bar-wrapper input {
+          padding: 0.85rem 1.25rem 0.85rem 3.2rem; /* More padding */
+          border-radius: 10px;
           border: 1px solid #3a4a6b;
           background-color: #0f3460;
-          color: white;
-          font-size: 0.95rem;
+          color: #e0e0e0;
+          font-size: 1rem;
           width: 100%;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        
-        .search-icon {
+        .search-bar-wrapper input::placeholder { color: #7a8b9e; }
+        .search-bar-wrapper input:focus {
+          outline: none;
+          border-color: #4d7cfe;
+          box-shadow: 0 0 0 4px rgba(77, 124, 254, 0.25);
+        }
+        .search-icon-input {
           position: absolute;
-          left: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #adb5bd;
+          left: 1.2rem;
+          color: #7a8b9e;
+          font-size: 1.2rem;
         }
         
-        .messages-content {
+        .messages-layout {
           display: flex;
           gap: 2rem;
-          height: calc(100vh - 250px);
-          overflow: hidden;
+          /* Max height to encourage scrolling within panels, not the whole page */
+          max-height: calc(100vh - 270px - 100px - 4rem - 2rem); /* vh - sidebar margin - metrics - toolbar - paddings */
+          min-height: 550px;
         }
         
-        .messages-list {
-          flex: 0 0 350px;
-          overflow: auto ;
-          
-          padding-right: 0.5rem;
+        .messages-list-panel {
+          flex: 0 0 400px; /* Wider list panel */
+          overflow-y: auto;
+          padding-right: 0.5rem; /* Space for scrollbar only if needed */
         }
         
+        .messages-list-panel::-webkit-scrollbar,
+        .message-detail-panel::-webkit-scrollbar,
+        .message-text-area::-webkit-scrollbar {
+          width: 10px;
+        }
+        .messages-list-panel::-webkit-scrollbar-track,
+        .message-detail-panel::-webkit-scrollbar-track,
+        .message-text-area::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.1);
+          border-radius: 10px;
+        }
+        .messages-list-panel::-webkit-scrollbar-thumb,
+        .message-detail-panel::-webkit-scrollbar-thumb,
+        .message-text-area::-webkit-scrollbar-thumb {
+          background: #3a4a6b;
+          border-radius: 10px;
+          border: 2px solid #16213e; /* Creates padding around thumb */
+        }
+        .messages-list-panel::-webkit-scrollbar-thumb:hover,
+        .message-detail-panel::-webkit-scrollbar-thumb:hover,
+        .message-text-area::-webkit-scrollbar-thumb:hover {
+          background: #4d7cfe;
+        }
+
         .message-card {
           background-color: #0f3460;
-          border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 1rem;
+          border-radius: 12px; /* More rounded */
+          padding: 1.25rem;
+          margin-bottom: 1.25rem;
           cursor: pointer;
-          transition: all 0.3s ease;
-          border-left: 3px solid transparent;
+          transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+          border: 1px solid #2c3e50; /* Darker border */
+          position: relative;
         }
-        
         .message-card:hover {
-          background-color: #1a3a6a;
+          background-color: #1f497a;
+          transform: translateY(-4px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.25);
         }
-        
         .message-card.active {
-          background-color: #1a3a6a;
-          border-left: 3px solid #4d7cfe;
+          background-color: #1f497a;
+          border-left: 5px solid #4d7cfe;
+          padding-left: calc(1.25rem - 4px);
+          box-shadow: 0 0 20px rgba(77, 124, 254, 0.25);
         }
         
-        .message-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.5rem;
-        }
-        
-        .sender-info {
+        .card-header {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-weight: 500;
+          margin-bottom: 0.75rem;
+          gap: 0.75rem;
         }
-        
+        .sender-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #4d7cfe;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .icon { color: #4d7cfe; }
+        .sender-name {
+          font-weight: 600;
+          color: #ffffff;
+          flex-grow: 1;
+          font-size: 1.05rem;
+        }
         .message-date {
           font-size: 0.8rem;
-          color: #adb5bd;
+          color: #9ab0c9; /* Lighter date color */
         }
-        
-        .message-preview p {
-          color: #e9ecef;
-          margin: 0.5rem 0;
+        .message-preview {
+          color: #ced4da;
+          margin: 0 0 0.75rem 0;
           font-size: 0.9rem;
+          line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          text-overflow: ellipsis;
         }
-        
-        .message-footer {
+        .card-footer {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-size: 0.8rem;
-          color: #adb5bd;
+          border-top: 1px solid #2c3e50; /* Subtle separator */
+          padding-top: 0.75rem;
+          margin-top: 0.75rem;
         }
-        
-        .no-messages {
+        .email-icon { font-size: 1rem; }
+        .sender-email {
+          font-size: 0.85rem;
+          color: #9ab0c9;
+        }
+
+        .empty-state {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          height: 300px;
+          height: 100%;
           text-align: center;
+          padding: 2rem;
+          color: #8a9bb3; /* Adjusted color */
+        }
+        .empty-state h3 {
+          color: #ffffff;
+          margin: 1.25rem 0 0.75rem;
+          font-size: 1.35rem;
         }
         
-        .no-messages h3 {
-          color: white;
-          margin: 1rem 0 0.5rem;
-        }
-        
-        .no-messages p {
-          color: #adb5bd;
-          margin: 0;
-        }
-        
-        .message-detail {
+        .message-detail-panel {
           flex: 1;
           background-color: #0f3460;
-          border-radius: 8px;
-          padding: 1.5rem;
+          border-radius: 12px;
+          padding: 2rem;
           overflow-y: auto;
+          border: 1px solid #2c3e50; /* Consistent border */
         }
         
-        .detail-card {
+        .detail-content-wrapper {
           display: flex;
           flex-direction: column;
           height: 100%;
         }
-        
         .detail-header {
           display: flex;
+          overflow: hidden;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.5rem; /* Increased space */
+          padding-bottom: 1rem; /* Increased space */
           border-bottom: 1px solid #3a4a6b;
-          padding-bottom: 1rem;
         }
-        
         .detail-header h3 {
-          color: white;
+          color: #ffffff;
           margin: 0;
+          font-size: 1.6rem; /* Larger detail title */
+          font-weight: 600;
         }
-        
-        .action-buttons {
-          display: flex;
-          gap: 0.75rem;
-        }
-        
-        .reply-btn, .delete-btn {
+        .action-buttons { display: flex; gap: 1rem; } /* Increased gap */
+        .action-btn {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          border-radius: 6px;
-          font-size: 0.9rem;
+          gap: 0.6rem;
+          padding: 0.75rem 1.5rem; /* More padding */
+          border-radius: 10px;
+          font-size: 0.95rem;
+          font-weight: 500;
           cursor: pointer;
           transition: all 0.3s ease;
-        }
-        
-        .reply-btn {
-          background-color: #4d7cfe;
-          color: white;
           border: none;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.15);
         }
+        .reply-btn { background-color: #4d7cfe; color: white; }
+        .reply-btn:hover { background-color: #3a6aed; box-shadow: 0 4px 10px rgba(77, 124, 254, 0.3); }
+        .delete-btn { background-color: #e74c3c; color: white; }
+        .delete-btn:hover { background-color: #c0392b; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
         
-        .reply-btn:hover {
-          background-color: #3a6aed;
-        }
-        
-        .delete-btn {
-          background-color: transparent;
-          color: #ff6b6b;
-          border: 1px solid #ff6b6b;
-        }
-        
-        .delete-btn:hover {
-          background-color: rgba(255, 107, 107, 0.1);
-        }
-        
-        .sender-details {
+        .sender-info-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
           gap: 1.5rem;
-          margin-bottom: 1.5rem;
+          margin-bottom: 2rem;
         }
-        
-        .detail-item {
+        .info-item {
           display: flex;
           align-items: flex-start;
-          gap: 0.75rem;
-        }
-        
-        .detail-item .icon {
-          color: #4d7cfe;
-          margin-top: 0.25rem;
-        }
-        
-        .detail-item label {
-          display: block;
-          color: #adb5bd;
-          font-size: 0.8rem;
-          margin-bottom: 0.25rem;
-        }
-        
-        .detail-item p {
-          color: white;
-          margin: 0;
-          font-size: 0.95rem;
-        }
-        
-        .message-content {
-          flex: 1;
-        }
-        
-        .message-content label {
-          display: block;
-          color: #adb5bd;
-          font-size: 0.9rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        .message-text {
+          overflow: hidden;
+          gap: 1rem; /* Increased gap */
           background-color: #16213e;
-          border-radius: 6px;
-          padding: 1rem;
-          color: white;
-          height: calc(100% - 50px);
-          overflow-y: auto;
-          white-space: pre-wrap;
+          padding: 1.25rem; /* More padding */
+          border-radius: 10px;
+        }
+        .info-icon {
+          color: #4d7cfe;
+          font-size: 1.3rem;
+          margin-top: 0.15rem;
+        }
+        .info-item label {
+          display: block;
+          color: #adb5bd;
+          font-size: 0.85rem; /* Slightly larger label */
+          margin-bottom: 0.4rem;
+          text-transform: uppercase;
+          font-weight: 500;
+        }
+        .info-item p {
+          color: #f0f0f0;
+          margin: 0;
+          font-size: 1rem; /* Larger text */
+          word-break: break-all;
         }
         
-        .select-message-prompt {
+        .message-full-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .message-full-content label {
+          display: block;
+          color: #adb5bd;
+          font-size: 1rem; /* Larger label */
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+        .message-text-area {
+          background-color: #16213e;
+          border-radius: 10px;
+          padding: 1.5rem;
+          color: #e0e0e0;
+          line-height: 1.7; /* Increased line height */
+          font-size: 1rem;
+          white-space: pre-wrap;
+          overflow-y: auto  ;
+          flex-grow: 1;
+          min-height: 200px; /* Ensure enough space */
+          border: 1px solid #3a4a6b;
+        }
+        
+        .select-prompt {
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           height: 100%;
           text-align: center;
-        }
-        
-        .prompt-icon {
-          font-size: 3rem;
-          color: #4d7cfe;
-          margin-bottom: 1rem;
-        }
-        
-        .select-message-prompt h3 {
-          color: white;
-          margin: 0.5rem 0;
-        }
-        
-        .select-message-prompt p {
           color: #adb5bd;
-          margin: 0;
+          padding: 2rem;
+          background-color: rgba(0,0,0,0.1); /* Subtle background */
+          border-radius: 12px;
         }
+        .prompt-icon-main {
+          font-size: 4.5rem; /* Larger icon */
+          color: #4d7cfe;
+          margin-bottom: 1.75rem;
+          opacity: 0.6;
+        }
+        .select-prompt h3 {
+          color: #ffffff;
+          margin: 0.5rem 0 1.25rem 0;
+          font-size: 1.6rem; /* Larger title */
+        }
+        .select-prompt p { max-width: 420px; line-height: 1.6; font-size: 0.95rem;}
         
         /* Responsive Adjustments */
-        @media (max-width: 1200px) {
+        @media (max-width: 1399px) { /* Adjust breakpoint for sidebar */
           .dashboard-container {
             margin-left: 0;
+            padding: 1.5rem;
           }
+           .messages-layout {
+             /* Adjust max-height when sidebar might be overlaid or hidden */
+             max-height: calc(100vh - 100px - 4rem - 2rem); /* vh - metrics - toolbar - paddings */
+           }
         }
-        
         @media (max-width: 992px) {
-          .messages-content {
+          .metrics-bar { grid-template-columns: 1fr; } /* Stack metrics on smaller screens */
+          .messages-layout {
             flex-direction: column;
-            height: auto;
+            max-height: none; /* Allow content to define height */
+            min-height: auto;
           }
-          
-          .messages-list {
+          .messages-list-panel {
             flex: 0 0 auto;
-            max-height: 300px;
+            max-height: 40vh; /* Limit height when stacked */
             width: 100%;
+            margin-bottom: 1.5rem;
           }
-          
-          .message-detail {
-            min-height: 400px;
-          }
+          .message-detail-panel { min-height: 45vh; }
+          .messages-toolbar { flex-direction: column; align-items: stretch; }
+          .search-bar-wrapper { min-width: auto; width: 100%; }
         }
-        
         @media (max-width: 768px) {
-          .dashboard-container {
-            padding: 1.5rem;
-          }
-          
-          .messages-wrapper {
-            padding: 1.5rem;
-          }
-          
-          .messages-header {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-          
-          .search-container {
-            width: 100%;
-          }
+          .dashboard-container { padding: 1rem; }
+          .messages-wrapper { padding: 1.5rem; }
+          .header-title-group { flex-direction: column; align-items: flex-start; gap: 0.5rem;}
+          .header-text h2 { font-size: 1.6rem;}
+          .header-text p { font-size: 0.9rem;}
+          .metric-card { flex-direction: column; align-items: flex-start; text-align: left;}
+          .metric-icon1 { font-size: 2.2rem; }
+          .metric-info p { font-size: 1.5rem; }
+          .metric-card.current-time .metric-info p { font-size: 1.3rem; }
         }
-        
         @media (max-width: 576px) {
-          .dashboard-container {
-            padding: 1rem;
-          }
-          
-          .messages-wrapper {
-            padding: 1rem;
-          }
-          
-          .sender-details {
-            grid-template-columns: 1fr;
-          }
-          
-          .action-buttons {
-            flex-direction: column;
-            width: 100%;
-          }
-          
-          .reply-btn, .delete-btn {
-            justify-content: center;
-          }
+          .messages-wrapper { padding: 1rem; }
+          .message-detail-panel { padding: 1.5rem; }
+          .detail-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+          .action-buttons { flex-direction: column; width: 100%; }
+          .action-btn { justify-content: center; }
+          .sender-info-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .info-item { padding: 1rem; }
+          .message-text-area { padding: 1rem; font-size: 0.95rem; min-height: 150px;}
+          .select-prompt h3 { font-size: 1.3rem; }
+          .select-prompt p { font-size: 0.9rem; }
+          .messages-list-panel { max-height: 35vh; }
+          .message-detail-panel { min-height: 40vh; }
         }
       `}</style>
     </div>
