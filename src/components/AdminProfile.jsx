@@ -106,7 +106,7 @@ const ProfilePage = () => {
             animationData={loadingAnimation} 
             style={{ height: 300, width: 300, marginLeft:"10%", marginTop:"30%", position: 'absolute', overflow: 'hidden' }}
           />
-          <p>Loading your profile...</p>
+          <p>Loading</p>
        
       </div>
     );

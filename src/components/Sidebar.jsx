@@ -24,12 +24,14 @@ const Sidebar = () => {
   const navigateTo = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef(null);
+  const sidebarRef = useRef(null);
 
   // Check if mobile view
-  useEffect(() => {
+   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
         setShowSidebar(true);
       } else {
         setShowSidebar(false);
@@ -43,11 +45,25 @@ const Sidebar = () => {
       setLoading(false);
     }, 1000);
 
-    return () => {
+     const handleClickOutside = (event) => {
+      if (isMobile && 
+          showSidebar && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target) &&
+          !event.target.closest('.menu-toggle')) {
+        setShowSidebar(false);
+      }
+    };
+
+     document.addEventListener('mousedown', handleClickOutside);
+
+   return () => {
       window.removeEventListener("resize", handleResize);
       clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isMobile, showSidebar]);
+  
 
   // Set active link based on current route
   useEffect(() => {
@@ -98,12 +114,18 @@ const Sidebar = () => {
   // Focus search input when sidebar opens
   useEffect(() => {
     if (showSidebar && searchInputRef.current) {
-      searchInputRef.current.focus();
+      setTimeout(() => {
+        searchInputRef.current.focus();
+      }, 300);
     }
   }, [showSidebar]);
 
   const handleSearchClick = (e) => {
     e.stopPropagation(); // Prevent click from bubbling to sidebar
+  };
+
+  const toggleSidebar = () => {
+    setShowSidebar(prev => !prev);
   };
 
   if (!isAuthenticated) return null;
@@ -268,7 +290,8 @@ const Sidebar = () => {
       )}
 
       {/* Sidebar */}
-      <nav className={`sidebar-container ${showSidebar ? "show" : ""}`}>
+      <nav className={`sidebar-container ${showSidebar ? "show" : ""}`}
+        ref={sidebarRef}>
         <div className="sidebar-header">
           <div className="brand-container">
             <img 
@@ -341,16 +364,16 @@ const Sidebar = () => {
       </nav>
 
       {/* Hamburger menu */}
-      <button 
+       <button 
         className="menu-toggle"
-        onClick={() => setShowSidebar(!showSidebar)}
+        onClick={toggleSidebar}
         aria-label="Toggle sidebar"
       >
         <GiHamburgerMenu />
       </button>
 
       <style jsx="true">{`
-        .sidebar-container {
+           .sidebar-container {
           position: fixed;
           top: 0;
           left: 0;
@@ -358,7 +381,7 @@ const Sidebar = () => {
           height: 100vh;
           background-color: #16213e;
           color: #e9ecef;
-          z-index: 1000;
+          z-index: 1001; /* Higher than overlay */
           transform: translateX(-100%);
           transition: transform 0.3s ease;
           display: flex;
@@ -378,7 +401,27 @@ const Sidebar = () => {
           right: 0;
           bottom: 0;
           background-color: rgba(0, 0, 0, 0.5);
-          z-index: 999;
+          z-index: 1000; /* Below sidebar */
+        }
+
+        .menu-toggle {
+          position: fixed;
+          top: 1rem;
+          left: 1rem;
+          background-color: #4d7cfe;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3rem;
+          cursor: pointer;
+          z-index: 1002; /* Above everything */
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+          transition: all 0.3s ease;
         }
 
         .sidebar-header {
