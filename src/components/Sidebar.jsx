@@ -124,9 +124,14 @@ const Sidebar = () => {
     e.stopPropagation(); // Prevent click from bubbling to sidebar
   };
 
-  const toggleSidebar = () => {
-    setShowSidebar(prev => !prev);
-  };
+ const toggleSidebar = () => {
+  setShowSidebar(prev => {
+    if (!prev && isMobile) {
+      setSearchTerm(""); // Reset search when opening on mobile
+    }
+    return !prev;
+  });
+};
 
   if (!isAuthenticated) return null;
 
@@ -314,17 +319,19 @@ const Sidebar = () => {
         </div>
 
         {/* Search Bar */}
-        <div className="search-wrapper" onClick={handleSearchClick}>
-          <AiOutlineSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search menu..."
-            className="search-field"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            ref={searchInputRef}
-          />
-        </div>
+       {!isMobile && (
+  <div className="search-wrapper" onClick={handleSearchClick}>
+    <AiOutlineSearch className="search-icon" />
+    <input
+      type="text"
+      placeholder="Search menu..."
+      className="search-field"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      ref={searchInputRef}
+    />
+  </div>
+)}
 
         <div className="navigation-links">
           {filteredNavItems.length > 0 ? (
@@ -667,7 +674,12 @@ const Sidebar = () => {
           .close-button {
             display: block;
           }
-          
+          .mobile-search {
+    display: none !important;
+  }
+    .navigation-links {
+    padding-top: 0.5rem;
+  }
           .sidebar-container {
             width: 260px;
           }

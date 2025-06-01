@@ -755,7 +755,7 @@ const Dashboard = () => {
     <button className="notification-btn">
       <div className="notification-icon">
         <FiBell />
-        <span className="notification-badge">3</span>
+       
       </div>
     </button>
     <div 
