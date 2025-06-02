@@ -50,6 +50,8 @@ const Login = () => {
           headers: { "Content-Type": "application/json" },
         }
       );
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       toast.success(data.message);
       setIsAuthenticated(true);
       navigateTo("/");

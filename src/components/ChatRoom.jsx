@@ -38,6 +38,12 @@ const ChatRoom = () => {
   const doctorAppointments = appointments.length;
   const totalRevenue = appointments.reduce((sum, app) => sum + (app.fees || 0), 0);
 
+  // Get user's full name safely
+  const getUserFullName = () => {
+    if (!user) return "Unknown";
+    return [user.firstName, user.lastName].filter(Boolean).join(' ') || "Unknown";
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -45,16 +51,12 @@ const ChatRoom = () => {
       try {
         setLoading(true);
         
-        const appointmentsRes = await axios.get(
-          `${API_BASE_URL}/api/v1/appointment/getall`,
-          { withCredentials: true }
-        );
-        setAppointments(appointmentsRes.data?.appointments || []);
+        const [appointmentsRes, patientsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/v1/appointment/getall`, { withCredentials: true }),
+          axios.get(`${API_BASE_URL}/api/v1/user/getAllPatiens`, { withCredentials: true })
+        ]);
         
-        const patientsRes = await axios.get(
-          `${API_BASE_URL}/api/v1/user/getAllPatiens`,
-          { withCredentials: true }
-        );
+        setAppointments(appointmentsRes.data?.appointments || []);
         setPatients(patientsRes.data?.patients || []);
         
       } catch (error) {
@@ -111,7 +113,7 @@ const ChatRoom = () => {
       });
 
       socketRef.current.on("receive_message", (message) => {
-        if (message && message._id && message.sender && message.message) {
+        if (message && message._id && message.message || message.sender) {
           setMessages(prev => {
             const exists = prev.some(msg => msg._id === message._id);
             return exists ? prev : [...prev, message];
@@ -157,18 +159,23 @@ const ChatRoom = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedAppointment || isSending || !user) {
-      toast.warning("Cannot send empty message or no patient selected");
+    if (!newMessage.trim() || !selectedAppointment) {
+      toast.warning(
+        !newMessage.trim() 
+          ? "Message cannot be empty" 
+          : "Please select a patient first"
+      );
       return;
     }
 
     try {
       setIsSending(true);
-      const senderName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown';
+      const senderName = getUserFullName();
 
       const messageData = {
         roomId: selectedAppointment._id,
         sender: senderName,
+        senderId: user?._id || "unknown",
         message: newMessage,
       };
 
@@ -181,7 +188,7 @@ const ChatRoom = () => {
         timestamp: new Date().toISOString()
       }]);
 
-      // Always send via HTTP first for reliability
+      // Send via HTTP
       const response = await axios.post(
         `${API_BASE_URL}/api/v1/chat/send`,
         messageData,
@@ -197,12 +204,12 @@ const ChatRoom = () => {
           msg._id === tempId ? response.data.message : msg
         ));
 
-        // Also emit via socket if connected
+        // Emit via socket if connected
         if (isConnected && socketRef.current?.connected) {
           socketRef.current.emit("send_message", {
-            room: selectedAppointment._id,
-            sender: senderName,
-            message: newMessage,
+            ...messageData,
+            _id: response.data.message._id,
+            timestamp: response.data.message.timestamp
           });
         }
       }
@@ -222,8 +229,6 @@ const ChatRoom = () => {
     if (!messageId || !selectedAppointment) return;
 
     try {
-      setMessages(prev => prev.filter((msg) => msg._id !== messageId));
-
       // First try via HTTP
       await axios.delete(
         `${API_BASE_URL}/api/v1/chat/delete/${selectedAppointment._id}/${messageId}`,
@@ -237,6 +242,9 @@ const ChatRoom = () => {
           messageId: messageId,
         });
       }
+
+      // Update local state
+      setMessages(prev => prev.filter(msg => msg._id !== messageId));
     } catch (error) {
       console.error("Error deleting message:", error);
       toast.error("Failed to delete message");
@@ -259,7 +267,6 @@ const ChatRoom = () => {
   };
 
   const handlePatientSelect = (patient) => {
-    // Find the latest appointment for this patient
     const patientAppointments = appointments.filter(app => app.patientId === patient._id);
     const latestAppointment = patientAppointments.sort(
       (a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate)
@@ -280,6 +287,17 @@ const ChatRoom = () => {
       (patient.phone && patient.phone.toString().includes(searchTerm))
     );
   });
+
+  // Get patient or doctor details by ID
+  const getUserDetails = (userId) => {
+    if (!userId) return null;
+    return patients.find(p => p._id === userId) || user;
+  };
+
+  // Check if message is from current user
+  const isCurrentUser = (message) => {
+    return message.senderId === user?._id;
+  };
 
   if (!isAuthenticated && !loading) {
     return <Navigate to="/login" />;
@@ -461,29 +479,39 @@ const ChatRoom = () => {
               
               <div className="chat-messages">
                 {messages.length > 0 ? (
-                  messages.map(message => (
-                    <div
-                      key={message._id}
-                      className={`message ${message.sender === `${user.firstName} ${user.lastName}` ? 'sent' : 'received'}`}
-                    >
-                      <div className="message-content">
-                        <div className="message-sender">{message.sender}</div>
-                        <div className="message-text">{message.message}</div>
-                        <div className="message-time">
-                          {new Date(message.timestamp || message.createdAt).toLocaleTimeString()}
+                  messages.map(message => {
+                    const senderDetails = getUserDetails(message.senderId);
+                    const isCurrent = isCurrentUser(message);
+                    
+                    return (
+                      <div
+                        key={message._id}
+                        className={`message ${isCurrent ? 'sent' : 'received'}`}
+                      >
+                        {!isCurrent && (
+                          <div className="message-avatar">
+                            {senderDetails?.firstName?.charAt(0)}{senderDetails?.lastName?.charAt(0)}
+                          </div>
+                        )}
+                        <div className="message-content">
+                          <div className="message-sender">{message.sender}</div>
+                          <div className="message-text">{message.message}</div>
+                          <div className="message-time">
+                            {new Date(message.timestamp || message.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </div>
                         </div>
+                        {isCurrent && (
+                          <button
+                            onClick={() => confirmDelete(message._id)}
+                            className="delete-btn"
+                            title="Delete message"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        )}
                       </div>
-                      {message.sender === `${user.firstName} ${user.lastName}` && (
-                        <button
-                          onClick={() => confirmDelete(message._id)}
-                          className="delete-btn"
-                          title="Delete message"
-                        >
-                          <FaTrash size={12} />
-                        </button>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="no-messages">
                     <Lottie
@@ -509,11 +537,11 @@ const ChatRoom = () => {
                       handleSendMessage();
                     }
                   }}
-                  disabled={isSending || selectedPatient.isDoctor}
+                  disabled={isSending}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || isSending || selectedPatient.isDoctor}
+                  disabled={!newMessage.trim() || isSending || !selectedAppointment}
                 >
                   {isSending ? 'Sending...' : <><FaPaperPlane /> Send</>}
                 </button>
@@ -920,6 +948,26 @@ const ChatRoom = () => {
 
         .message.received {
           margin-right: auto;
+        }
+
+        .message-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: #4d7cfe;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 0.9rem;
+          margin-right: 12px;
+          align-self: flex-end;
+          flex-shrink: 0;
+        }
+
+        .message.sent .message-avatar {
+          display: none;
         }
 
         .message-content {
