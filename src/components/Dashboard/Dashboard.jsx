@@ -1,30 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Context } from "../main";
+import { Context } from "../../main";
 import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { GoTrash } from "react-icons/go";
-import { AiOutlineNotification } from "react-icons/ai";
-import { Bar, Pie, Line, Doughnut } from "react-chartjs-2";
+import { FiBell, FiChevronDown, FiCheckCircle } from "react-icons/fi";
 import { Chart, registerables } from "chart.js";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import {
-  FiDownload,
-  FiFileText,
-  FiUser,
-  FiCalendar,
-  FiClock,
-  FiBell, FiChevronDown ,
-  FiCheckCircle,
-  FiMail,
-  FiPhone,
-  FiUsers,
-} from "react-icons/fi";
-import Lottie from "lottie-react";
-import animationData from "../../public/notfountAnimation.json";
-import { FaIndianRupeeSign } from "react-icons/fa6";
+import DashboardStats from "./DashboardStats";
+import DashboardAdmins from "./DashboardAdmins";
+import DashboardAppointments from "./DashboardAppointments";
+
 Chart.register(...registerables);
 
 const Dashboard = () => {
@@ -42,8 +26,15 @@ const Dashboard = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [admins, setAdmins] = useState([]);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [adminsLoading, setAdminsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(15);
+  const [statusFilter, setStatusFilter] = useState("All");
+
   const navigate = useNavigate();
+  const { isAuthenticated, admin } = useContext(Context);
+
   // Fetch admins on component mount
   useEffect(() => {
     const fetchAdmins = async () => {
@@ -61,6 +52,7 @@ const Dashboard = () => {
     };
     fetchAdmins();
   }, []);
+
   // Check if the user is on a mobile device
   useEffect(() => {
     const checkMobile = () => {
@@ -71,6 +63,7 @@ const Dashboard = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
   // Handle search input change
   useEffect(() => {
     const fetchData = async () => {
@@ -124,6 +117,7 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
   // Handle appointment status update
   const handleUpdateStatus = async (appointmentId, status, fees) => {
     try {
@@ -145,7 +139,9 @@ const Dashboard = () => {
         const oldStatus = appointments
           .find((a) => a._id === appointmentId)
           ?.status.toLowerCase();
-        if (oldStatus) newStats[oldStatus] -= 1;
+        if (oldStatus) {
+          newStats[oldStatus] -= 1;
+        }
         newStats[status.toLowerCase()] =
           (newStats[status.toLowerCase()] || 0) + 1;
         return newStats;
@@ -156,6 +152,7 @@ const Dashboard = () => {
       toast.error(error.response?.data?.message || "Error updating status");
     }
   };
+
   // Handle delete appointment
   const handleDeleteAppointment = async (appointmentId) => {
     try {
@@ -250,7 +247,8 @@ const Dashboard = () => {
 
     doc.save("Appointments_Report.pdf");
   };
-  //filter
+
+  // Filter appointments
   const filteredAppointments = appointments.filter((appointment) => {
     const matchesSearch =
       `${appointment.firstName} ${appointment.lastName} ${appointment.phone} ${appointment.doctor.firstName} ${appointment.doctor.lastName} ${appointment.department}`
@@ -262,9 +260,25 @@ const Dashboard = () => {
         new Date(dateFilter).toLocaleDateString()
       : true;
 
-    return matchesSearch && matchesDate;
+    const matchesStatus = statusFilter === "All" 
+      ? true 
+      : appointment.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesDate && matchesStatus;
   });
 
+  // Pagination logic
+  const indexOfLastAppointment = currentPage * itemsPerPage;
+  const indexOfFirstAppointment = indexOfLastAppointment - itemsPerPage;
+  const currentAppointments = filteredAppointments.slice(
+    indexOfFirstAppointment,
+    indexOfLastAppointment
+  );
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+
+  // Chart data
   const appointmentStatusData = {
     labels: ["Pending", "Accepted", "Rejected", "Completed"],
     datasets: [
@@ -407,7 +421,6 @@ const Dashboard = () => {
     ],
   };
 
-  const { isAuthenticated, admin } = useContext(Context);
   if (!isAuthenticated) {
     return <Navigate to={"/login"} />;
   }
@@ -746,36 +759,35 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       {/* Top Header with Search, Notifications and Profile */}
-     <div className="dashboard-top-header">
-  <div className="header-title">
-    <h1>Dashboard</h1>
-    <p>Welcome back, <span className="admin-name">{admin?.firstName} {admin?.lastName}</span></p>
-  </div>
-  <div className="header-actions">
-    <button className="notification-btn">
-      <div className="notification-icon">
-        <FiBell />
-       
-      </div>
-    </button>
-    <div 
-      className="profile-btn" 
-      onClick={() => navigate("/admin/profile")}
-    >
-      <div className="avatar">
-        {admin?.firstName?.charAt(0).toUpperCase()}
-        {admin?.lastName?.charAt(0).toUpperCase()}
-      </div>
-      {!isMobile && (
-        <div className="profile-info">
-          <span className="profile-name">{admin?.firstName}</span>
-          <span className="profile-role">Administrator</span>
+      <div className="dashboard-top-header">
+        <div className="header-title">
+          <h1>Dashboard</h1>
+          <p>Welcome back, <span className="admin-name">{admin?.firstName} {admin?.lastName}</span></p>
         </div>
-      )}
-      {!isMobile && <FiChevronDown className="dropdown-icon" />}
-    </div>
-  </div>
-</div>
+        <div className="header-actions">
+          <button className="notification-btn">
+            <div className="notification-icon">
+              <FiBell />
+            </div>
+          </button>
+          <div 
+            className="profile-btn" 
+            onClick={() => navigate("/admin/profile")}
+          >
+            <div className="avatar">
+              {admin?.firstName?.charAt(0).toUpperCase()}
+              {admin?.lastName?.charAt(0).toUpperCase()}
+            </div>
+            {!isMobile && (
+              <div className="profile-info">
+                <span className="profile-name">{admin?.firstName}</span>
+                <span className="profile-role">Administrator</span>
+              </div>
+            )}
+            {!isMobile && <FiChevronDown className="dropdown-icon" />}
+          </div>
+        </div>
+      </div>
 
       <div className="dashboard-header">
         <div className="welcome-section">
@@ -784,497 +796,48 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card total-appointments">
-          <div className="stat-content">
-            <div className="stat-icon">
-              <FiCalendar />
-            </div>
-            <div className="stat-info">
-              <h3>{appointmentsCount}</h3>
-              <p>Total Appointments</p>
-            </div>
-          </div>
-          <div className="mini-graph">
-            <Line
-              data={miniLineGraphData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } },
-              }}
-            />
-          </div>
-        </div>
+      <DashboardStats 
+        isMobile={isMobile}
+        stats={stats}
+        appointmentsCount={appointmentsCount}
+        doctorsCount={doctorsCount}
+        patientsCount={patientsCount}
+        miniLineGraphData={miniLineGraphData}
+        appointmentStatusData={appointmentStatusData}
+        monthlyAppointmentsData={monthlyAppointmentsData}
+        doctorsSpecializationData={doctorsSpecializationData}
+        weeklyVisitsData={weeklyVisitsData}
+        revenueByDepartmentData={revenueByDepartmentData}
+        patientAgeDistributionData={patientAgeDistributionData}
+      />
 
-        <div className="stat-card doctors">
-          <div className="stat-content">
-            <div className="stat-icon">
-              <FiUser />
-            </div>
-            <div className="stat-info">
-              <h3>{doctorsCount}</h3>
-              <p>Registered Doctors</p>
-            </div>
-          </div>
-          <div className="mini-graph">
-            <Line
-              data={miniLineGraphData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } },
-              }}
-            />
-          </div>
-        </div>
+      <DashboardAdmins 
+        admins={admins} 
+        adminsLoading={adminsLoading} 
+        admin={admin} 
+      />
 
-        <div className="stat-card patients">
-          <div className="stat-content">
-            <div className="stat-icon">
-              <FiUser />
-            </div>
-            <div className="stat-info">
-              <h3>{patientsCount}</h3>
-              <p>Registered Patients</p>
-            </div>
-          </div>
-          <div className="mini-graph">
-            <Line
-              data={miniLineGraphData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } },
-              }}
-            />
-          </div>
-        </div>
+      <DashboardAppointments
+        isMobile={isMobile}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        dateFilter={dateFilter}
+        setDateFilter={setDateFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        currentAppointments={currentAppointments}
+        filteredAppointments={filteredAppointments}
+        itemsPerPage={itemsPerPage}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        paginate={paginate}
+        exportToExcel={exportToExcel}
+        exportToPDF={exportToPDF}
+        handleUpdateStatus={handleUpdateStatus}
+        handleDeleteAppointment={handleDeleteAppointment}
+      />
 
-        <div className="stat-card pending">
-          <div className="stat-content">
-            <div className="stat-icon">
-              <FiClock />
-            </div>
-            <div className="stat-info">
-              <h3>{stats.pending}</h3>
-              <p>Pending Appointments</p>
-            </div>
-          </div>
-          <div className="mini-graph">
-            <Line
-              data={miniLineGraphData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false } },
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="charts-grid">
-        <div className="chart-card">
-          <h4>Appointment Status</h4>
-          <div className="chart-container">
-            <Doughnut
-              data={appointmentStatusData}
-              options={{
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: isMobile ? "bottom" : "right",
-                    labels: {
-                      color: "#e9ecef",
-                      font: {
-                        size: 10,
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <h4>Monthly Appointments</h4>
-          <div className="chart-container">
-            <Line
-              data={monthlyAppointmentsData}
-              options={{
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    grid: {
-                      color: "rgba(255, 255, 255, 0.1)",
-                    },
-                    ticks: {
-                      color: "#e9ecef",
-                      font: { size: 10 },
-                    },
-                  },
-                  x: {
-                    grid: {
-                      color: "rgba(255, 255, 255, 0.1)",
-                    },
-                    ticks: {
-                      color: "#e9ecef",
-                      font: { size: 10 },
-                    },
-                  },
-                },
-                plugins: {
-                  legend: {
-                    labels: {
-                      color: "#e9ecef",
-                      font: { size: 10 },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-       
-
-        <div className="chart-card">
-          <h4>Revenue by Department</h4>
-          <div className="chart-container">
-            <Bar
-              data={revenueByDepartmentData}
-              options={{
-                maintainAspectRatio: false,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    grid: {
-                      color: "rgba(255, 255, 255, 0.1)",
-                    },
-                    ticks: {
-                      color: "#e9ecef",
-                      font: { size: 10 },
-                      callback: function (value) {
-                        return "₹" + value.toLocaleString();
-                      },
-                    },
-                  },
-                  x: {
-                    grid: {
-                      color: "rgba(255, 255, 255, 0.1)",
-                    },
-                    ticks: {
-                      color: "#e9ecef",
-                      font: { size: 10 },
-                    },
-                  },
-                },
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="chart-card">
-          <h4>Patient Age Distribution</h4>
-          <div className="chart-container">
-            <Pie
-              data={patientAgeDistributionData}
-              options={{
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: isMobile ? "bottom" : "right",
-                    labels: {
-                      color: "#e9ecef",
-                      font: {
-                        size: 10,
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-        <div className="chart-card">
-          <h4> Doctors Specialization </h4>
-          <div className="chart-container">
-            <Bar
-              data={doctorsSpecializationData}
-              options={{
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: isMobile ? "bottom" : "right",
-                    display: false,
-                    labels: {
-                      color: "#e9ecef",
-                      font: {
-                        size: 10,
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-        <div className="chart-card">
-          <h4>weekly Visits Data</h4>
-          <div className="chart-container">
-            <Bar
-              data={weeklyVisitsData}
-              options={{
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: isMobile ? "bottom" : "right",
-                    display: false,
-                    labels: {
-                      color: "#e9ecef",
-                      font: {
-                        size: 10,
-                      },
-                    },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-       {/*Admins*/}
-        {adminsLoading ? (
-          <div className="admins-skeleton">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="skeleton-admin-card">
-                <div className="skeleton-avatar"></div>
-                <div className="skeleton-info">
-                  <div className="skeleton-line"></div>
-                  <div className="skeleton-line"></div>
-                  <div className="skeleton-line"></div>
-                </div>
-                <div className="skeleton-badge"></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="admins-container">
-            <h3>Admin Team</h3>
-            <div className="admins-grid">
-              {admins.map((adminItem) => (
-                <div key={adminItem._id} className="admin-card">
-                  <div className="admin-avatar">
-                    {adminItem.firstName.charAt(0).toUpperCase()}
-                    {adminItem.lastName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="admin-info">
-                    <h4>
-                      {adminItem.firstName} {adminItem.lastName}
-                      {adminItem._id === admin?._id && (
-                        <span className="you-badge">You</span>
-                      )}
-                    </h4>
-                    <div className="admin-detail">
-                      <FiMail className="icon" />
-                      <span>{adminItem.email}</span>
-                    </div>
-                    <div className="admin-detail">
-                      <FiPhone className="icon" />
-                      <span>{adminItem.phone}</span>
-                    </div>
-                    <div className="admin-detail">
-                      <FiUser className="icon" />
-                      <span>{adminItem.gender}</span>
-                    </div>
-                  </div>
-                  <div className="admin-stats">
-                    <FiUsers className="stat-icon" />
-                    <span className="stat-value">
-                      {adminItem.doctorsCreatedCount}
-                    </span>
-                    <span className="stat-label">Doctors</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-      <div className="appointments-table">
-        <div className="table-header">
-          <h3>Recent Appointments</h3>
-          <div className="search-filter-container">
-            <input
-              type="text"
-              placeholder="Search patients, doctors..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="date-filter-wrapper"
-            />
-            {dateFilter && (
-              <button
-                onClick={() => setDateFilter("")}
-                className="clear-date"
-                aria-label="Clear date filter"
-              >
-                ×
-              </button>
-            )}
-          </div>
-          <div className="export-buttons">
-            <button className="export-btn excel" onClick={exportToExcel}>
-              <FiDownload /> {!isMobile ? "Excel" : ""}
-            </button>
-            <button className="export-btn pdf" onClick={exportToPDF}>
-              <FiFileText /> {!isMobile ? "PDF" : ""}
-            </button>
-          </div>
-        </div>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>S.No</th>
-                <th>Patient</th>
-                {!isMobile && <th>Date</th>}
-                <th>Doctor</th>
-                {!isMobile && <th>Department</th>}
-                <th>Status</th>
-                <th>Fees</th>
-                <th>Visited</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAppointments && filteredAppointments.length > 0 ? (
-                filteredAppointments.map((appointment, index) => (
-                  <tr key={appointment._id}>
-                    <td>{index + 1}</td>
-                    <td>
-                      <div className="patient-info">
-                        <span className="name">{`${appointment.firstName} ${appointment.lastName}`}</span>
-                        {!isMobile && (
-                          <span className="phone">{appointment.phone}</span>
-                        )}
-                      </div>
-                    </td>
-                    {!isMobile && (
-                      <td>
-                        {new Date(
-                          appointment.appointment_date
-                        ).toLocaleDateString()}
-                      </td>
-                    )}
-                    <td>
-                      {isMobile
-                        ? `${appointment.doctor.firstName.charAt(0)}. ${
-                            appointment.doctor.lastName
-                          }`
-                        : `${appointment.doctor.firstName} ${appointment.doctor.lastName}`}
-                    </td>
-                    {!isMobile && <td>{appointment.department}</td>}
-                    <td>
-                      <span
-                        className={`status-badge ${appointment.status.toLowerCase()}`}
-                      >
-                        {appointment.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="fees-input">
-                        <FaIndianRupeeSign className="fees-icon" />
-                        <input
-                          type="number"
-                          value={appointment.fees || ""}
-                          onChange={(e) =>
-                            handleUpdateStatus(
-                              appointment._id,
-                              appointment.status,
-                              e.target.value
-                            )
-                          }
-                          placeholder="0"
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      {appointment.hasVisited ? (
-                        <span className="visited-yes">
-                          {isMobile ? <FiCheckCircle /> : "Yes"}
-                        </span>
-                      ) : (
-                        <span className="visited-no">
-                          {isMobile ? "" : "No"}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <select
-                          className="status-select"
-                          value={appointment.status}
-                          onChange={(e) =>
-                            handleUpdateStatus(
-                              appointment._id,
-                              e.target.value,
-                              appointment.fees
-                            )
-                          }
-                        >
-                          <option value="Pending">Pending</option>
-                          <option value="Accepted">Accepted</option>
-                          <option value="Rejected">Rejected</option>
-                          <option value="Completed">Completed</option>
-                        </select>
-                        <button
-                          className="delete-btn"
-                          onClick={() =>
-                            handleDeleteAppointment(appointment._id)
-                          }
-                        >
-                          <GoTrash />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <td colSpan="10" className="no-data">
-                                               
-                                                 <Lottie 
-                                                   animationData={animationData} 
-                                                   style={{ marginLeft:"5%" , height: 200, width: 200, overflow: 'hidden' }} 
-                                                 />
-                                                 <p>No Appointments Found!</p>
-                                            
-                                             </td>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <style jsx="true" >{`
+      <style jsx="true">{`
         .dashboard-container {
           background-color: #1a1a2e;
           color: #e9ecef;
@@ -1284,183 +847,163 @@ const Dashboard = () => {
         }
 
         /* Top Header Styles */
-/* Top Header Styles */
-.dashboard-top-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(48, 59, 77, 0.9);
-  flex-wrap: wrap;
-  gap: 1rem;
-}
+        .dashboard-top-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid rgba(48, 59, 77, 0.9);
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
 
-.header-title {
-  display: flex;
-  flex-direction: column;
-}
+        .header-title {
+          display: flex;
+          flex-direction: column;
+        }
 
-.header-title h1 {
-  font-size: 1.5rem;
-  margin: 0;
-  color: #ffffff;
-  font-weight: 600;
-}
+        .header-title h1 {
+          font-size: 1.5rem;
+          margin: 0;
+          color: #ffffff;
+          font-weight: 600;
+        }
 
-.header-title p {
-  margin: 0.25rem 0 0;
-  color: #a0aec0;
-  font-size: 0.9rem;
-}
+        .header-title p {
+          margin: 0.25rem 0 0;
+          color: #a0aec0;
+          font-size: 0.9rem;
+        }
 
-.admin-name {
-  color: #4ade80;
-  font-weight: 500;
-}
+        .admin-name {
+          color: #4ade80;
+          font-weight: 500;
+        }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+        }
 
-.notification-btn {
-  position: relative;
-  background: none;
-  border: none;
-  color: #cbd5e0;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+        .notification-btn {
+          position: relative;
+          background: none;
+          border: none;
+          color: #cbd5e0;
+          cursor: pointer;
+          padding: 0.5rem;
+          border-radius: 50%;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
 
-.notification-btn:hover {
-  background-color: rgba(83, 194, 102, 0.3);
-}
+        .notification-btn:hover {
+          background-color: rgba(83, 194, 102, 0.3);
+        }
 
-.notification-icon {
-  position: relative;
-  font-size: 1.35rem;
-}
+        .notification-icon {
+          position: relative;
+          font-size: 1.35rem;
+        }
 
-.notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  color: white;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: bold;
-  
-}
+        .profile-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          padding: 0.25rem 0.5rem;
+          border-radius: 8px;
+        }
 
-.profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-}
+        .profile-btn:hover {
+          background-color: rgba(74, 85, 104, 0.3);
+        }
 
-.profile-btn:hover {
-  background-color: rgba(74, 85, 104, 0.3);
-}
+        .avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 1rem;
+        }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 1rem;
-}
+        .profile-info {
+          display: flex;
+          flex-direction: column;
+        }
 
-.profile-info {
-  display: flex;
-  flex-direction: column;
-}
+        .profile-name {
+          font-size: 0.9rem;
+          color: #e9ecef;
+          font-weight: 500;
+        }
 
-.profile-name {
-  font-size: 0.9rem;
-  color: #e9ecef;
-  font-weight: 500;
-}
+        .profile-role {
+          font-size: 0.75rem;
+          color: #a0aec0;
+        }
 
-.profile-role {
-  font-size: 0.75rem;
-  color: #a0aec0;
-}
+        .dropdown-icon {
+          color: #a0aec0;
+          font-size: 1rem;
+          transition: transform 0.3s ease;
+        }
 
-.dropdown-icon {
-  color: #a0aec0;
-  font-size: 1rem;
-  transition: transform 0.3s ease;
-}
+        .profile-btn:hover .dropdown-icon {
+          transform: translateY(2px);
+        }
 
-.profile-btn:hover .dropdown-icon {
-  transform: translateY(2px);
-}
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .dashboard-top-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+          }
+          
+          .header-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+          
+          .profile-btn {
+            padding: 0.25rem;
+          }
+        }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .dashboard-top-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
-  .profile-btn {
-    padding: 0.25rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .header-title h1 {
-    font-size: 1.3rem;
-    text-align: center;
-    justify-content: center;
-
-  }
-    .header-title p {
-      text-align: center;
-    justify-content: center;
-  color: #a0aec0;
-  font-size: 0.9rem;
-}
-  
-  .avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 0.9rem;
-  }
-      .profile-btn {
-    padding: 0.25rem;
-    margin-top: -0.5rem;
-  }
-
-}
-  
+        @media (max-width: 480px) {
+          .header-title h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            justify-content: center;
+          }
+          .header-title p {
+            text-align: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 0.9rem;
+          }
+          
+          .avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 0.9rem;
+          }
+          .profile-btn {
+            padding: 0.25rem;
+            margin-top: -0.5rem;
+          }
+        }
 
         /* Rest of the styles */
         .dashboard-header {
@@ -1593,346 +1136,390 @@ const Dashboard = () => {
           padding: 1rem;
           margin-top: 1.5rem;
         }
-          /* Add these styles to your existing CSS */
-.table-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-  .admins-container {
-  background-color: #16213e;
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
 
-.admins-container h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: white;
-  font-size: 1.1rem;
-}
-
-.admins-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.admin-card {
-  background-color: #0f3460;
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  transition: transform 0.3s ease;
-}
-
-.admin-card:hover {
-  transform: translateY(-3px);
-}
-
-.admin-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #0d6efd;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 1rem;
-  flex-shrink: 0;
-}
-
-.admin-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.admin-info h4 {
-  margin: 0 0 0.25rem 0;
-  color: white;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.you-badge {
-  background-color: rgba(25, 135, 84, 0.63);
-  color:rgb(236, 248, 242);
-  padding: 0.15rem 0.4rem;
-  border-radius: 20px;
-  font-size: 0.6rem;
-  font-weight: 500;
-}
-
-.admin-detail {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.75rem;
-  color: #adb5bd;
-  margin-bottom: 0.2rem;
-}
-
-.admin-detail .icon {
-  color: #4d7cfe;
-  font-size: 0.8rem;
-}
-
-.admin-stats {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-left: 0.5rem;
-  padding-left: 0.5rem;
-  border-left: 1px solid rgb(200, 208, 220);
-}
-
-.stat-icon {
-  color: #d63384;
-  font-size: 1rem;
-}
-
-.stat-value {
-  font-weight: bold;
-  color: white;
-  font-size: 0.9rem;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  color: #adb5bd;
-}
-
-/* Skeleton Loader Styles */
-.admins-skeleton {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.skeleton-admin-card {
-  background-color: #0f3460;
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-}
-
-.skeleton-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 1rem;
-  background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-info {
-  flex: 1;
-}
-
-.skeleton-line {
-  height: 12px;
-  background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.skeleton-line:first-child {
-  width: 80%;
-}
-
-.skeleton-line:nth-child(2) {
-  width: 60%;
-}
-
-.skeleton-line:last-child {
-  width: 70%;
-}
-
-.skeleton-badge {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  margin-left: 0.5rem;
-}
-
-@media (max-width: 768px) {
-  .admins-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  }
-  
-  .admin-card {
-    padding: 0.75rem;
-  }
-  
-  .admin-avatar {
-    width: 36px;
-    height: 36px;
-    font-size: 0.8rem;
-  }
-  
-  .admin-info h4 {
-    font-size: 0.8rem;
-  }
-  
-  .admin-detail {
-    font-size: 0.7rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .admins-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.search-filter-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-  min-width: 0;
-
-}
-
-.search-input {
-  padding: 0.5rem 1rem;
-  border-radius: 40px;
-  border: 1px solid #3a4a6b;
-  background-color: #0f3460;
-  color: white;
-  font-size: 0.85rem;
-  flex: 1;
-  min-width: 150px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #4d7cfe;
-  box-shadow: 0 0 0 2px rgba(77, 124, 254, 0.2);
-}
-
-.date-filter-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background-color: #0f3460;
-  border-radius: 8px;
-  border: 1px solid #3a4a6b;
-  padding-right: 0.5rem;
-  height: 30px;
-  transition: all 0.3s ease;
-}
-
-.date-filter-wrapper:focus-within {
-  border-color: #4d7cfe;
-  box-shadow: 0 0 0 2px rgba(77, 124, 254, 0.2);
-}
-
-.date-filter {
-  padding: 0.5rem 1rem;
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 0.85rem;
-  width: 160px;
-  border-radius: 8px 0 0 8px;
-}
-
-.date-filter::-webkit-calendar-picker-indicator {
-  filter: invert(0.8);
-  cursor: pointer;
-}
-
-.clear-date {
-  background: none;
-  border: none;
-  color: #a0aec0;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s ease;
-}
-
-.clear-date:hover {
-  color: #e53e3e;
-}
-
-.export-buttons {
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .table-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  
-  .search-filter-container {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .search-input,
-  .date-filter-wrapper {
-    width: 100%;
-  }
-  
-  .date-filter {
-    width: calc(100% - 2rem);
-  }
-}
-
-@media (max-width: 480px) {
-  .export-buttons {
-    width: 100%;
-  }
-  
-  .export-btn {
-    flex: 1;
-    justify-content: center;
-  }
-}
-        .table-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
-          gap: 1rem;
+        .admins-container {
+          background-color: #16213e;
+          border-radius: 10px;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
         }
 
-        .table-header h3 {
-          margin: 0;
+        .admins-container h3 {
+          margin-top: 0;
+          margin-bottom: 1rem;
           color: white;
           font-size: 1.1rem;
         }
 
+        .admins-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 1rem;
+        }
+
+        .admin-card {
+          background-color: #0f3460;
+          border-radius: 8px;
+          padding: 1rem;
+          display: flex;
+          align-items: center;
+          transition: transform 0.3s ease;
+        }
+
+        .admin-card:hover {
+          transform: translateY(-3px);
+        }
+
+        .admin-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background-color: #0d6efd;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          margin-right: 1rem;
+          flex-shrink: 0;
+        }
+
+        .admin-info {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .admin-info h4 {
+          margin: 0 0 0.25rem 0;
+          color: white;
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .you-badge {
+          background-color: rgba(25, 135, 84, 0.63);
+          color:rgb(236, 248, 242);
+          padding: 0.15rem 0.4rem;
+          border-radius: 20px;
+          font-size: 0.6rem;
+          font-weight: 500;
+        }
+
+        .admin-detail {
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          font-size: 0.75rem;
+          color: #adb5bd;
+          margin-bottom: 0.2rem;
+        }
+
+        .admin-detail .icon {
+          color: #4d7cfe;
+          font-size: 0.8rem;
+        }
+
+        .admin-stats {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          margin-left: 0.5rem;
+          padding-left: 0.5rem;
+          border-left: 1px solid rgb(200, 208, 220);
+        }
+
+        .stat-icon {
+          color: #d63384;
+          font-size: 1rem;
+        }
+
+        .stat-value {
+          font-weight: bold;
+          color: white;
+          font-size: 0.9rem;
+        }
+
+        .stat-label {
+          font-size: 0.7rem;
+          color: #adb5bd;
+        }
+
+        /* Skeleton Loader Styles */
+        .admins-skeleton {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .skeleton-admin-card {
+          background-color: #0f3460;
+          border-radius: 8px;
+          padding: 1rem;
+          display: flex;
+          align-items: center;
+        }
+
+        .skeleton-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          margin-right: 1rem;
+          background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        .skeleton-info {
+          flex: 1;
+        }
+
+        .skeleton-line {
+          height: 12px;
+          background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+          border-radius: 4px;
+          margin-bottom: 0.5rem;
+        }
+
+        .skeleton-line:first-child {
+          width: 80%;
+        }
+
+        .skeleton-line:nth-child(2) {
+          width: 60%;
+        }
+
+        .skeleton-line:last-child {
+          width: 70%;
+        }
+
+        .skeleton-badge {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: linear-gradient(90deg, #2d3748 25%, #1a202c 50%, #2d3748 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+          margin-left: 0.5rem;
+        }
+
+        /* Admin Popup Styles */
+        .admin-popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(5px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 1rem;
+        }
+
+        .admin-popup {
+          background-color: #16213e;
+          border-radius: 12px;
+          padding: 2rem;
+          max-width: 500px;
+          width: 100%;
+          position: relative;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+          animation: popIn 0.3s ease-out;
+        }
+
+        .close-popup {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          background: none;
+          border: none;
+          color: #adb5bd;
+          font-size: 1.5rem;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .close-popup:hover {
+          color: #e53e3e;
+        }
+
+        .popup-header {
+          text-align: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .popup-avatar {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          font-weight: bold;
+          margin: 0 auto 1rem;
+        }
+
+        .popup-header h3 {
+          margin: 0.5rem 0 0;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .popup-header p {
+          margin: 0.25rem 0 0;
+          color: #adb5bd;
+          font-size: 0.9rem;
+        }
+
+        .popup-details {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .detail-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem;
+          background-color: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+        }
+
+        .detail-item .icon {
+          color: #4d7cfe;
+          font-size: 1.1rem;
+        }
+
+        .detail-item span {
+          color: #e9ecef;
+          font-size: 0.95rem;
+        }
+
+        @keyframes popIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        /* Table Controls */
+        .table-controls {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .search-filter-container {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex: 1;
+          min-width: 0;
+          flex-wrap: wrap;
+        }
+
+        .search-input {
+          padding: 0.5rem 1rem;
+          border-radius: 40px;
+          border: 1px solid #3a4a6b;
+          background-color: #0f3460;
+          color: #ffffff;
+          font-size: 0.85rem;
+          flex: 1;
+          min-width: 150px;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: #4d7cfe;
+          box-shadow: 0 0 0 2px rgba(77, 124, 254, 0.2);
+        }
+
+        .date-filter-wrapper {
+          position: relative;
+          display: flex;
+          color: #ffffff;
+          align-items: center;
+          background-color: #0f3460;
+          border-radius: 8px;
+          border: 1px solid #3a4a6b;
+          padding-right: 0.5rem;
+          height: 30px;
+          transition: all 0.3s ease;
+        }
+
+        .date-filter-wrapper:focus-within {
+          border-color: #4d7cfe;
+          box-shadow: 0 0 0 2px rgb(237, 238, 241);
+        }
+
+        .clear-date {
+          background: none;
+          border: none;
+          color: #a0aec0;
+          cursor: pointer;
+          padding: 0.25rem;
+          display: flex;
+          align-items: center;
+          transition: color 0.2s ease;
+        }
+
+        .clear-date:hover {
+          color: #e53e3e;
+        }
+
+        /* Status Filter Dropdown */
+        .status-filter {
+          padding: 0.5rem 1rem;
+          border-radius: 50px;
+          background-color: #0f3460;
+          color: white;
+          border: 1px solid #3a4a6b;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.85rem;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23adb5bd' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 0.75rem center;
+          background-size: 12px;
+          padding-right: 2rem;
+          min-width: 150px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-filter:focus {
+          outline: none;
+          border-color: #4d7cfe;
+          box-shadow: 0 0 0 2px rgba(77, 124, 254, 0.2);
+        }
+
         .export-buttons {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .export-btn {
@@ -2114,6 +1701,50 @@ const Dashboard = () => {
           font-size: 0.9rem;
         }
 
+        /* Pagination Styles */
+        .pagination {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 1.5rem;
+          flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+          padding: 0.5rem 0.8rem;
+          border: none;
+          border-radius: 50px;
+          background-color: #0f3460;
+          color: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.85rem;
+          min-width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+          background-color: #1e4b8c;
+          transform: translateY(-2px);
+        }
+
+        .pagination-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none !important;
+        }
+
+        .pagination-btn.active {
+          background-color: #4d7cfe;
+          font-weight: bold;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1200px) {
           .dashboard-container {
@@ -2146,6 +1777,48 @@ const Dashboard = () => {
 
           .chart-container {
             height: 200px;
+          }
+
+          .admins-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          }
+          
+          .admin-card {
+            padding: 0.75rem;
+          }
+          
+          .admin-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 0.8rem;
+          }
+          
+          .admin-info h4 {
+            font-size: 0.8rem;
+          }
+          
+          .admin-detail {
+            font-size: 0.7rem;
+          }
+
+          .table-controls {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+          }
+          
+          .search-filter-container {
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          
+          .search-input,
+          .date-filter-wrapper {
+            width: 100%;
+          }
+          
+          .date-filter {
+            width: calc(100% - 2rem);
           }
         }
 
@@ -2180,6 +1853,46 @@ const Dashboard = () => {
           .chart-card h4 {
             font-size: 0.9rem;
           }
+
+          .admins-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .export-buttons {
+            width: 100%;
+          }
+          
+          .export-btn {
+            flex: 1;
+            justify-content: center;
+          }
+
+          .pagination {
+            gap: 0.2rem;
+          }
+          
+          .pagination-btn {
+            min-width: 32px;
+            height: 32px;
+            padding: 0.3rem;
+          }
+          
+          .pagination-btn:first-child,
+          .pagination-btn:last-child {
+            display: none;
+          }
+          
+          .pagination-btn:first-child::after,
+          .pagination-btn:last-child::after {
+            content: "◄";
+            font-size: 0.8rem;
+          }
+          
+          .pagination-btn:last-child::after {
+            content: "►";
+          }
         }
 
         @media (max-width: 400px) {
@@ -2205,7 +1918,8 @@ const Dashboard = () => {
           .chart-container {
             height: 180px;
           }
-        `}</style>
+        }
+      `}</style>
     </div>
   );
 };

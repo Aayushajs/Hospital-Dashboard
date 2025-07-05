@@ -96,14 +96,19 @@
     const [totalAccepted, setTotalAccepted] = useState(0);
     const [totalRejected, setTotalRejected] = useState(0);
     const [totalPending, setTotalPending] = useState(0);
+    
+    const [currentPage, setCurrentPage] = useState(1);
+  const [doctorsPerPage] = useState(10); // 10 doctors per page
 
     const [chartType, setChartType] = useState('gender'); // 'gender', 'age', 'department'
+
+
 
     useEffect(() => {
   const interval = setInterval(() => {
     setChartType(prev => {
-      if (prev === 'gender') return 'age';
-      if (prev === 'age') return 'department';
+      if (prev === 'gender') { return 'age'; }
+      if (prev === 'age') { return 'department'; }
       return 'gender';
     });
   }, 4000); // Change every 5 seconds
@@ -175,6 +180,14 @@ const filteredDoctors = useMemo(() => {
     return matchesSearch && matchesDepartment;
   });
 }, [doctors, searchTerm, filterDepartment]);
+
+    // Pagination logic
+const indexOfLastDoctor = currentPage * doctorsPerPage;
+const indexOfFirstDoctor = indexOfLastDoctor - doctorsPerPage;
+const currentDoctors = filteredDoctors.slice(indexOfFirstDoctor, indexOfLastDoctor);
+const totalPages = Math.ceil(filteredDoctors.length / doctorsPerPage);
+
+const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const handleDeleteDoctor = async (doctorId) => {
       if (window.confirm("Are you sure you want to delete this doctor? This action cannot be undone.")) {
@@ -602,51 +615,83 @@ const filteredDoctors = useMemo(() => {
                 </tbody>
               </table>
             ) : filteredDoctors.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Photo</th>
-                    <th>Name</th>
-                    <th>Department</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>DOB</th>
-                    <th>Gender</th>
-                    <th>NIC</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDoctors.map((doctor) => (
-                    <tr key={doctor._id}>
-                      <td>
-                        <img 
-                          src={doctor.docAvatar?.url || "/default-doctor.jpg"} 
-                          alt={`Dr. ${doctor.firstName} ${doctor.lastName}`}
-                          className="doctor-table-avatar"
-                          onError={(e) => { e.target.onerror = null; e.target.src = "/default-doctor.jpg";}}
-                        />
-                      </td>
-                      <td>Dr. {doctor.firstName} {doctor.lastName}</td>
-                      <td>{doctor.doctorDepartment || "N/A"}</td>
-                      <td>{doctor.email}</td>
-                      <td>{doctor.phone || "N/A"}</td>
-                      <td>{doctor.dob ? new Date(doctor.dob).toLocaleDateString() : "N/A"}</td>
-                      <td>{doctor.gender || "N/A"}</td>
-                      <td>{doctor.nic || "N/A"}</td>
-                      <td>
-                        <button 
-                          onClick={() => handleDeleteDoctor(doctor._id)} 
-                          className="action-btn delete"
-                          title="Delete Doctor"
-                        >
-                          <FiTrash2 />
-                        </button>
-                      </td>
+              <>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Photo</th>
+                      <th>Name</th>
+                      <th>Department</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>DOB</th>
+                      <th>Gender</th>
+                      <th>NIC</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {currentDoctors.map((doctor) => (
+                      <tr key={doctor._id}>
+                        <td>
+                          <img 
+                            src={doctor.docAvatar?.url || "/default-doctor.jpg"} 
+                            alt={`Dr. ${doctor.firstName} ${doctor.lastName}`}
+                            className="doctor-table-avatar"
+                            onError={(e) => { e.target.onerror = null; e.target.src = "/default-doctor.jpg";}}
+                          />
+                        </td>
+                        <td>Dr. {doctor.firstName} {doctor.lastName}</td>
+                        <td>{doctor.doctorDepartment || "N/A"}</td>
+                        <td>{doctor.email}</td>
+                        <td>{doctor.phone || "N/A"}</td>
+                        <td>{doctor.dob ? new Date(doctor.dob).toLocaleDateString() : "N/A"}</td>
+                        <td>{doctor.gender || "N/A"}</td>
+                        <td>{doctor.nic || "N/A"}</td>
+                        <td>
+                          <button 
+                            onClick={() => handleDeleteDoctor(doctor._id)} 
+                            className="action-btn delete"
+                            title="Delete Doctor"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {/* Pagination */}
+                {filteredDoctors.length > doctorsPerPage && (
+                  <div className="pagination-container">
+                    <button 
+                      onClick={() => paginate(currentPage - 1)} 
+                      disabled={currentPage === 1}
+                      className="pagination-btn"
+                    >
+                      Previous
+                    </button>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                      <button
+                        key={number}
+                        onClick={() => paginate(number)}
+                        className={`pagination-btn ${currentPage === number ? 'active' : ''}`}
+                      >
+                        {number}
+                      </button>
+                    ))}
+                    
+                    <button 
+                      onClick={() => paginate(currentPage + 1)} 
+                      disabled={currentPage === totalPages}
+                      className="pagination-btn"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <NotFoundDisplay />
             )}
@@ -1028,6 +1073,75 @@ const filteredDoctors = useMemo(() => {
             .metric-top { margin-bottom: 1rem; }
             .chart-wrapper, .full-width-chart .chart-wrapper { height: 250px; }
           }
+            .pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: 25px;
+  background-color: #0f3460;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #1e4b8c;
+  transform: translateY(-2px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.pagination-btn.active {
+  background-color: #4d7cfe;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 480px) {
+  .pagination-container {
+    gap: 0.3rem;
+  }
+  
+  .pagination-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0.5rem;
+  }
+  
+  .pagination-btn:first-child,
+  .pagination-btn:last-child {
+    display: none;
+  }
+  
+  .pagination-btn:first-child::after,
+  .pagination-btn:last-child::after {
+    content: "◄";
+    font-size: 0.8rem;
+  }
+  
+  .pagination-btn:last-child::after {
+    content: "►";
+  }
+}
         `}</style>
       </div>
     );
