@@ -76,6 +76,8 @@ const Sidebar = () => {
     else if (path === "/PatientsDashboard") setActiveLink("PatientsDashboard");
     else if (path === "/admin/profile") setActiveLink("profile");
     else if (path == "/ChatRoom") setActiveLink("ChatRoom");
+    else if (path === "/description/:id") setActiveLink("description/:id");
+
     else setActiveLink("");
   }, [location]);
 
@@ -107,6 +109,7 @@ const Sidebar = () => {
     { icon: <IoPersonAddSharp />, label: "Add Doctor", path: "/doctor/addnew", key: "addDoctor" },
     { icon: <GiHamburgerMenu />, label: "Chat Room", path: "/ChatRoom", key: "ChatRoom" },
     { icon: <AiFillMessage />, label: "Feedback Messages", path: "/messages", key: "messages" },
+    { icon: <AiOutlineSearch />, label: "Medical Descriptions", path: "description/:id", key: "description" }
   ];
 
   // Filter nav items based on search term
@@ -155,7 +158,7 @@ const Sidebar = () => {
         </div>
         
         <div className="loading-nav">
-          {[1, 2, 3, 4, 5,6,7].map((item) => (
+          {[1, 2, 3, 4, 5,6,7,8,9].map((item) => (
             <div key={item} className="loading-nav-item">
               <div className="loading-icon"></div>
               <div className="loading-text" style={{ width: '70%', height: '16px' }}></div>
@@ -543,7 +546,7 @@ const Sidebar = () => {
         .navigation-links {
           flex: 1;
           padding: 0.5rem 0;
-          overflow-y: auto;
+          overflow-y: hidden;
         }
 
         .nav-link {
@@ -631,7 +634,7 @@ const Sidebar = () => {
         }
 
         .logout-container {
-          padding: 1rem 0;
+          padding: 0.5rem 0;
           border-top: 1px solid #2d3748;
           margin-top: auto;
         }

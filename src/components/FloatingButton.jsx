@@ -66,7 +66,7 @@ const FloatingCalculatorButton = () => {
   };
 
   const handleOperation = (op) => {
-    if (input === 'Error') return;
+    if (input === 'Error') {return};
     
     setPreviousInput(input);
     setOperation(op);
@@ -74,7 +74,9 @@ const FloatingCalculatorButton = () => {
   };
 
   const calculateResult = () => {
-    if (!previousInput || !operation) return;
+    if (!previousInput || !operation) {
+      return;
+    }
     
     try {
       const prev = parseFloat(previousInput);
@@ -104,7 +106,7 @@ const FloatingCalculatorButton = () => {
   };
 
   const handleDecimal = () => {
-    if (input.includes('.')) return;
+    if (input.includes('.')) {return};
     setInput(input + '.');
   };
 
@@ -125,7 +127,7 @@ const FloatingCalculatorButton = () => {
           onClick={handleOpen}
           sx={{
             position: 'fixed',
-            bottom: 70,
+            bottom: 50,
             right: 30,
             zIndex: 2000,
             backgroundColor: '#3c6e71',

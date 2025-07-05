@@ -15,7 +15,8 @@ import "./App.css";
 import ProfilePage from "./components/AdminProfile";
 import PatientsDashboard from "./components/getAllpasent";
 import ChatRoom from "./components/ChatRoom";
-
+import DescriptionDashboard from "./components/DescriptionDetailPage";
+import DescriptionBill from "./components/MedicalDescriptions";
 const App = () => {
   const { isAuthenticated, setIsAuthenticated, admin, setAdmin } =
     useContext(Context);
@@ -53,6 +54,8 @@ const App = () => {
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/admin/profile" element={<ProfilePage/>}/>
         <Route path="/PatientsDashboard" element={<PatientsDashboard/>}/>
+        <Route path="/description-bill" element={<DescriptionBill />} />
+        <Route path="/description/:id" element={<DescriptionDashboard />} />
       </Routes>
       <ToastContainer position="top-center" />
     </Router>

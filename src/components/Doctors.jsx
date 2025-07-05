@@ -9,6 +9,7 @@
   import * as XLSX from "xlsx";
   import Lottie from "lottie-react";
   import notFoundAnimation from "../../public/notfountAnimation.json";
+  import FloatingCalculatorButton from "./FloatingButton";
   import { Line, Bar, Doughnut } from "react-chartjs-2";
   import {
     Chart as ChartJS,
@@ -409,6 +410,7 @@ const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
       <div className="doctors-dashboard-container">
+        <FloatingCalculatorButton />
         {/* Metrics Bar */}
         <div className="metrics-bar">
           <div className="metric-card">

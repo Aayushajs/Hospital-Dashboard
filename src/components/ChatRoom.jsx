@@ -40,12 +40,12 @@ const ChatRoom = () => {
 
   // Get user's full name safely
   const getUserFullName = () => {
-    if (!user) return "Unknown";
+    if (!user) { return "Unknown"; }
     return [user.firstName, user.lastName].filter(Boolean).join(' ') || "Unknown";
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated){ return};
 
     const fetchData = async () => {
       try {
@@ -161,9 +161,9 @@ const ChatRoom = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedAppointment) {
       toast.warning(
-        !newMessage.trim() 
-          ? "Message cannot be empty" 
-          : "Please select a patient first"
+        newMessage.trim()
+          ? "Please select a patient first"
+          : "Message cannot be empty"
       );
       return;
     }
@@ -226,7 +226,9 @@ const ChatRoom = () => {
   };
 
   const handleDeleteMessage = async (messageId) => {
-    if (!messageId || !selectedAppointment) return;
+    if (!messageId || !selectedAppointment) {
+      return;
+    }
 
     try {
       // First try via HTTP
@@ -290,7 +292,9 @@ const ChatRoom = () => {
 
   // Get patient or doctor details by ID
   const getUserDetails = (userId) => {
-    if (!userId) return null;
+    if (!userId) {
+      return null;
+    }
     return patients.find(p => p._id === userId) || user;
   };
 

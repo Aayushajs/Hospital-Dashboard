@@ -10,6 +10,7 @@ import { FaIndianRupeeSign } from "react-icons/fa6";
 import Lottie from "lottie-react";
 import animationData from "../../public/notfountAnimation.json";
 import loadingAnimation from "../../public/loding.json"; // Add your loading animation Lottie file
+import FloatingCalculatorButton from "./FloatingButton"; // Import the FloatingCalculatorButton component
 
 Chart.register(...registerables);
 
@@ -227,6 +228,7 @@ const PatientsDashboard = () => {
 
   return (
     <div className="dashboard-container">
+      <FloatingCalculatorButton />
       <h2>Patients Dashboard</h2>
       
       {/* Stats Cards */}
