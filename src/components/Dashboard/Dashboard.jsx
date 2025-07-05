@@ -8,6 +8,7 @@ import { Chart, registerables } from "chart.js";
 import DashboardStats from "./DashboardStats";
 import DashboardAdmins from "./DashboardAdmins";
 import DashboardAppointments from "./DashboardAppointments";
+import FloatingCalculatorButton from "../FloatingButton";
 
 Chart.register(...registerables);
 
@@ -427,6 +428,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
+      
       <div className="dashboard-container">
         {/* Skeleton Loader */}
         <div className="skeleton-loader">
@@ -509,7 +511,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
+         
         <style jsx="true">{`
           .skeleton-loader {
             padding: 1.5rem;
@@ -758,6 +760,9 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
+       <>
+         <FloatingCalculatorButton/>
+        </>
       {/* Top Header with Search, Notifications and Profile */}
       <div className="dashboard-top-header">
         <div className="header-title">
@@ -816,7 +821,7 @@ const Dashboard = () => {
         adminsLoading={adminsLoading} 
         admin={admin} 
       />
-
+   
       <DashboardAppointments
         isMobile={isMobile}
         searchTerm={searchTerm}
@@ -836,7 +841,7 @@ const Dashboard = () => {
         handleUpdateStatus={handleUpdateStatus}
         handleDeleteAppointment={handleDeleteAppointment}
       />
-
+      
       <style jsx="true">{`
         .dashboard-container {
           background-color: #1a1a2e;
