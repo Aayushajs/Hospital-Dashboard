@@ -9,7 +9,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
 import { Chart, registerables } from "chart.js";
 import DocterDashboardStats from "./DocterDashboardStats";
-import DashboardAppointments from "../Dashboard/DashboardAppointments";
+import DocterDashboardAppointments from "../Doctor/DashboardAppointments";
 import FloatingCalculatorButton from "../FloatingButton";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -368,7 +368,7 @@ const DoctorDashboard = () => {
       />
 
       {/* Appointments Table Section */}
-      <DashboardAppointments
+      <DocterDashboardAppointments
         isMobile={isMobile}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -387,7 +387,6 @@ const DoctorDashboard = () => {
         handleUpdateStatus={handleUpdateStatus}
         handleDeleteAppointment={handleDeleteAppointment}
       />
-      
       <style jsx="true">{`
         .dashboard-container {
           background-color: #1a1a2e;
@@ -397,7 +396,339 @@ const DoctorDashboard = () => {
           margin-left: 270px;
           transition: all 0.3s ease;
         }
-
+  .appointments-table {
+    background-color: #16213e;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    color: #e9ecef;
+  }
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .table-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .table-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .search-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    padding: 0.5rem 1rem;
+    border-radius: 40px;
+    border: 1px solid #3a4a6b;
+    background-color: #0f3460;
+    color: #fff;
+    font-size: 0.85rem;
+    min-width: 150px;
+    transition: all 0.3s ease;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: #4d7cfe;
+    box-shadow: 0 0 0 2px rgba(77, 124, 254, 0.2);
+  }
+  .date-filter-wrapper {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #3a4a6b;
+    background-color: #0f3460;
+    color: #fff;
+    font-size: 0.85rem;
+    min-width: 150px;
+    transition: all 0.3s ease;
+  }
+  .clear-date {
+    background: none;
+    border: none;
+    color: #a0aec0;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+  }
+  .clear-date:hover {
+    color: #e53e3e;
+  }
+  .status-filter {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    background-color: #0f3460;
+    color: #fff;
+    border: 1px solid #3a4a6b;
+    cursor: pointer;
+    font-size: 0.85rem;
+    min-width: 150px;
+    transition: all 0.3s ease;
+  }
+  .export-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .export-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem 0.8rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  .export-btn.excel {
+    background-color: #2a7f3f;
+    color: #fff;
+  }
+  .export-btn.pdf {
+    background-color: #d32f2f;
+    color: #fff;
+  }
+  .export-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+  }
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+  th {
+    background-color: #0f3460;
+    color: #fff;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.8rem;
+  }
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #2d3748;
+    color: #e9ecef;
+    font-size: 0.8rem;
+  }
+  .patient-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .patient-info .name {
+    font-weight: 500;
+    color: #fff;
+    font-size: 0.9rem;
+  }
+  .patient-info .phone {
+    font-size: 0.7rem;
+    color: #adb5bd;
+    margin-top: 0.2rem;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .status-badge.pending {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+  }
+  .status-badge.accepted {
+    background-color: rgba(25, 135, 84, 0.2);
+    color: #198754;
+  }
+  .status-badge.rejected {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+  }
+  .status-badge.completed {
+    background-color: rgba(13, 110, 253, 0.2);
+    color: #0d6efd;
+  }
+  .fees-input {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .fees-icon {
+    color: #adb5bd;
+    font-size: 0.9rem;
+  }
+  .fees-input input {
+    background-color: #0f3460;
+    color: #fff;
+    border: 1px solid #2d3748;
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    width: 70px;
+    font-size: 0.8rem;
+  }
+  .fees-input input:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  .visited-yes {
+    color: #198754;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .visited-no {
+    color: #dc3545;
+  }
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .status-select {
+    background-color: #0f3460;
+    color: #fff;
+    border: 1px solid #2d3748;
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .status-select:hover {
+    border-color: #3b82f6;
+  }
+  .status-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  .delete-btn {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 0.4rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .delete-btn:hover {
+    background-color: #c82333;
+  }
+  .no-data {
+    text-align: center;
+    padding: 1.5rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+  /* Pagination Styles */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .pagination-btn {
+    padding: 0.5rem 0.8rem;
+    border: none;
+    border-radius: 50px;
+    background-color: #0f3460;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .pagination-btn:hover:not(:disabled) {
+    background-color: #1e4b8c;
+    transform: translateY(-2px);
+  }
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+  .pagination-btn.active {
+    background-color: #4d7cfe;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  @media (max-width: 768px) {
+    .appointments-table {
+      padding: 1rem 0.5rem;
+    }
+    .table-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .table-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .search-filter-container {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .search-input,
+    .date-filter-wrapper {
+      width: 100%;
+    }
+    .status-filter {
+      width: 100%;
+    }
+    .table-container {
+      min-width: 0;
+    }
+    table {
+      min-width: 600px;
+    }
+  }
+  @media (max-width: 576px) {
+    .appointments-table {
+      padding: 0.5rem;
+    }
+    .table-header h3 {
+      font-size: 1rem;
+    }
+    .search-input {
+      font-size: 0.8rem;
+    }
+    .table-container {
+      min-width: 0;
+    }
+    table {
+      min-width: 400px;
+    }
+    .pagination-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0.3rem;
+    }
+  }
         @media (max-width: 1200px) {
           .dashboard-container {
             margin-left: 0;
