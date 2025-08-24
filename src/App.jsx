@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "./api";
 import React, { useContext, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./components/Dashboard/Dashboard";
@@ -17,19 +18,27 @@ import PatientsDashboard from "./components/getAllpasent";
 import ChatRoom from "./components/ChatRoom";
 import DescriptionDashboard from "./components/DescriptionDetailPage";
 import DescriptionBill from "./components/MedicalDescriptions";
+import DoctorDashboard from "./components/Doctor/DoctorDashboard";
+// import DoctorProfile from "./components/Doctor/DoctorProfile";
+
 const App = () => {
-  const { isAuthenticated, setIsAuthenticated, admin, setAdmin } =
-    useContext(Context);
+  const { 
+    isAuthenticated, 
+    setIsAuthenticated,
+    isDoctorAuthenticated,
+    setIsDoctorAuthenticated,
+    admin, 
+    setAdmin,
+    doctor,
+    setDoctor
+  } = useContext(Context);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchAdmin = async () => {
       try {
         const response = await axios.get(
-          "https://jainam-hospital-backend.onrender.com/api/v1/user/admin/me",
-          //"http://localhost:4000/api/v1/user/admin/me",
-          {
-            withCredentials: true,
-          }
+          `${API_BASE_URL}/api/v1/user/admin/me`,
+          { withCredentials: true }
         );
         setIsAuthenticated(true);
         setAdmin(response.data.user);
@@ -38,25 +47,70 @@ const App = () => {
         setAdmin({});
       }
     };
-    fetchUser();
-  }, [isAuthenticated]);
+
+    const fetchDoctor = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/v1/user/doctor/me`,
+          { withCredentials: true }
+        );
+        setIsDoctorAuthenticated(true);
+        setDoctor(response.data.user);
+      } catch (error) {
+        setIsDoctorAuthenticated(false);
+        setDoctor({});
+      }
+    };
+
+    fetchAdmin();
+    fetchDoctor();
+  }, [isAuthenticated, isDoctorAuthenticated]);
 
   return (
     <Router>
-      <Sidebar />
+      {/* Show sidebar only for authenticated users */}
+      {(isAuthenticated || isDoctorAuthenticated) && <Sidebar />}
+      
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
-        <Route path="/doctor/addnew" element={<AddNewDoctor />} />
-        <Route path="/admin/addnew" element={<AddNewAdmin />} />
-        <Route path="/ChatRoom" element={<ChatRoom/>} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/doctors" element={<Doctors />} />
-        <Route path="/admin/profile" element={<ProfilePage/>}/>
-        <Route path="/PatientsDashboard" element={<PatientsDashboard/>}/>
-        <Route path="/description-bill" element={<DescriptionBill />} />
-        <Route path="/description/:id" element={<DescriptionDashboard />} />
+        
+        {/* Admin Routes */}
+        {isAuthenticated && (
+          <>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/doctor/addnew" element={<AddNewDoctor />} />
+            <Route path="/admin/addnew" element={<AddNewAdmin />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/admin/profile" element={<ProfilePage />} />
+            <Route path="/PatientsDashboard" element={<PatientsDashboard />} />
+            <Route path="/description-bill" element={<DescriptionBill />} />
+            <Route path="/description/:id" element={<DescriptionDashboard />} />
+            <Route path="/ChatRoom" element={<ChatRoom />} />
+          </>
+        )}
+        
+        {/* Doctor Routes */}
+        {isDoctorAuthenticated && (
+          <>
+            <Route path="/" element={<DoctorDashboard />} />
+            <Route path="/DocterDashboard" element={<DoctorDashboard />} />
+            {/* <Route path="/doctor/profile" element={<DoctorProfile />} />
+            <Route path="/doctor/messages" element={<Messages />} />
+            <Route path="/doctor/patients" element={<PatientsDashboard />} />
+            <Route path="/doctor/description/:id" element={<DescriptionDashboard />} /> */}
+          </>
+        )}
+        
+        {/* Fallback route - redirect based on auth status */}
+        <Route path="*" element={
+          isAuthenticated ? <Dashboard /> : 
+          isDoctorAuthenticated ? <DoctorDashboard /> : 
+          <Login />
+        } />
       </Routes>
+      
       <ToastContainer position="top-center" />
     </Router>
   );

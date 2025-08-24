@@ -1,13 +1,52 @@
 {
   "name": "dashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "main": "electron.mjs",
+  "description": "Hospital Management Dashboard",
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "dist": "electron-builder --win --x64",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron electron.mjs"
+  },
+  "build": {
+    "appId": "com.jainam.hospital",
+    "productName": "Hospital Dashboard",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron.mjs"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icons/win/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icons/win/icon.ico",
+      "uninstallerIcon": "assets/icons/win/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "extraMetadata": {
+      "main": "electron.mjs"
+    }
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -34,6 +73,9 @@
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^37.2.0",
+    "electron-builder": "^23.6.0",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",

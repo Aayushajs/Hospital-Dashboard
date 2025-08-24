@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../../api";
 import React, { useContext, useEffect, useState } from "react";
 import { Context } from "../../main";
 import { Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { FiBell, FiChevronDown, FiCheckCircle } from "react-icons/fi";
+import { FiBell, FiChevronDown } from "react-icons/fi";
 import { Chart, registerables } from "chart.js";
 import DashboardStats from "./DashboardStats";
 import DashboardAdmins from "./DashboardAdmins";
@@ -41,7 +42,7 @@ const Dashboard = () => {
     const fetchAdmins = async () => {
       try {
         const { data } = await axios.get(
-          "https://jainam-hospital-backend.onrender.com/api/v1/user/admins",
+          `${API_BASE_URL}/api/v1/user/admins`,
           { withCredentials: true }
         );
         setAdmins(data.admins);
@@ -71,15 +72,15 @@ const Dashboard = () => {
       try {
         const [appointmentsRes, doctorsRes, patientsRes] = await Promise.all([
           axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/appointment/getall",
+            `${API_BASE_URL}/api/v1/appointment/getall`,
             { withCredentials: true }
           ),
           axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/user/doctors",
+            `${API_BASE_URL}/api/v1/user/doctors`,
             { withCredentials: true }
           ),
           axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/user/getAllPatiens",
+            `${API_BASE_URL}/api/v1/user/getAllPatiens`,
             { withCredentials: true }
           ),
         ]);
@@ -123,7 +124,7 @@ const Dashboard = () => {
   const handleUpdateStatus = async (appointmentId, status, fees) => {
     try {
       const { data } = await axios.put(
-        `https://jainam-hospital-backend.onrender.com/api/v1/appointment/update/${appointmentId}`,
+  `${API_BASE_URL}/api/v1/appointment/update/${appointmentId}`,
         { status, fees },
         { withCredentials: true }
       );
@@ -158,7 +159,7 @@ const Dashboard = () => {
   const handleDeleteAppointment = async (appointmentId) => {
     try {
       const { data } = await axios.delete(
-        `https://jainam-hospital-backend.onrender.com/api/v1/appointment/delete/${appointmentId}`,
+  `${API_BASE_URL}/api/v1/appointment/delete/${appointmentId}`,
         { withCredentials: true }
       );
       setAppointments((prev) =>

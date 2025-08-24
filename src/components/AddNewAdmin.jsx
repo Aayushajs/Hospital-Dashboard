@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useContext, useState } from "react";
 import { Context } from "../main";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -75,7 +76,7 @@ const AddNewAdmin = () => {
     
     try {
       const response = await axios.post(
-        "https://jainam-hospital-backend.onrender.com/api/v1/user/admin/addnew",
+  `${API_BASE_URL}/api/v1/user/admin/addnew`,
         formData,
         {
           withCredentials: true,

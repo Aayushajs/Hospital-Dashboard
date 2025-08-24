@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useState, useEffect, useContext } from "react";
 import { Context } from "../main";
 import { Navigate } from "react-router-dom";
@@ -34,11 +35,11 @@ const PatientsDashboard = () => {
         // Fetch patients and appointments data in parallel
         const [patientsRes, appointmentsRes] = await Promise.all([
           axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/user/getAllPatiens",
+            `${API_BASE_URL}/api/v1/user/getAllPatiens`,
             { withCredentials: true }
           ),
           axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/appointment/getall",
+            `${API_BASE_URL}/api/v1/appointment/getall`,
             { withCredentials: true }
           )
         ]);

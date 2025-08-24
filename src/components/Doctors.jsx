@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
   import axios from "axios";
   import React, { useContext, useEffect, useState, useMemo } from "react";
   import { toast } from "react-toastify";
@@ -126,7 +127,7 @@
         setLoading(true);
         try {
           const { data } = await axios.get(
-            "https://jainam-hospital-backend.onrender.com/api/v1/user/doctors",
+            `${API_BASE_URL}/api/v1/user/doctors`,
             { withCredentials: true }
           );
           const fetchedDoctors = data.doctors || [];
@@ -193,7 +194,7 @@ const paginate = (pageNumber) => setCurrentPage(pageNumber);
     const handleDeleteDoctor = async (doctorId) => {
       if (window.confirm("Are you sure you want to delete this doctor? This action cannot be undone.")) {
         try {
-          await axios.delete(`https://jainam-hospital-backend.onrender.com/api/v1/user/doctor/delete/${doctorId}`, { withCredentials: true });
+          await axios.delete(`${API_BASE_URL}/api/v1/user/doctor/delete/${doctorId}`, { withCredentials: true });
           setDoctors(prevDoctors => prevDoctors.filter(doc => doc._id !== doctorId));
           toast.success("Doctor deleted successfully");
         } catch (error) {

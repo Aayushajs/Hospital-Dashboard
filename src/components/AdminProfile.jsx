@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -29,7 +30,7 @@ const ProfilePage = () => {
     const fetchProfileData = async () => {
       try {
         const { data } = await axios.get(
-          'https://jainam-hospital-backend.onrender.com/api/v1/user/admin/me',
+          `${API_BASE_URL}/api/v1/user/admin/me`,
           { withCredentials: true }
         );
         setUserData(data.user);
@@ -51,7 +52,7 @@ const ProfilePage = () => {
   const handleSave = async () => {
     try {
       const { data } = await axios.put(
-        'https://jainam-hospital-backend.onrender.com/api/v1/user/admin/update',
+  `${API_BASE_URL}/api/v1/user/admin/update`,
         userData,
         { withCredentials: true }
       );

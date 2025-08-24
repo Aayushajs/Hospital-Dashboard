@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useContext, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -116,7 +117,7 @@ const AddNewDoctor = () => {
       formDataToSend.append("docAvatar", docAvatar);
 
       const response = await axios.post(
-        "https://jainam-hospital-backend.onrender.com/api/v1/user/doctor/addnew",
+  `${API_BASE_URL}/api/v1/user/doctor/addnew`,
         formDataToSend,
         {
           withCredentials: true,

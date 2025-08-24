@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useState, useEffect, useContext } from "react";
 import { Context } from "../main";
 import { Navigate, useNavigate } from "react-router-dom";
@@ -38,7 +39,7 @@ const DescriptionsDashboard = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "https://jainam-hospital-backend.onrender.com/api/v1/descriptions/admin/filter",
+          `${API_BASE_URL}/api/v1/descriptions/admin/filter`,
           { withCredentials: true }
         );
 
@@ -130,7 +131,7 @@ const DescriptionsDashboard = () => {
     try {
       // Create a temporary anchor tag to trigger the download
       const link = document.createElement('a');
-      link.href = `https://jainam-hospital-backend.onrender.com/api/v1/descriptions/${descriptionId}/pdf`;
+  link.href = `${API_BASE_URL}/api/v1/descriptions/${descriptionId}/pdf`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.click();

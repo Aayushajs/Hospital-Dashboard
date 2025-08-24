@@ -1,31 +1,42 @@
-import  { useContext, useState, useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../api";
+import { useContext, useState, useEffect } from "react";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Context } from "../main"; // Assuming this path is correct
+import { Context } from "../main";
 import axios from "axios";
 import Lottie from "lottie-react";
-import loginAnimationData from "../../public/login aimation.json"; // Your existing animation
-import { FaEnvelope, FaLock, FaBuilding } from "react-icons/fa";
+import loginAnimationData from "../../public/login aimation.json";
+import { FaBuilding, FaEnvelope, FaLock } from "react-icons/fa6";
 import { MdLogin } from "react-icons/md";
+import { FaUserMd } from "react-icons/fa";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
-  const navigateTo = useNavigate();
+  const [role, setRole] = useState("Admin");
+  
+  const { 
+    isAuthenticated,
+    isDoctorAuthenticated,
+    setIsAuthenticated,
+    setIsDoctorAuthenticated,
+    setAdmin,
+    setDoctor
+  } = useContext(Context);
+  
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // For dynamic gradient animation effect
-  const [gradientAngle, setGradientAngle] = useState(0);
-
+  // Check authentication status only once on component mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      setGradientAngle((prevAngle) => (prevAngle + 1) % 360);
-    }, 50); // Adjust speed of gradient animation
-    return () => clearInterval(interval);
-  }, []);
-
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    } else if (isDoctorAuthenticated) {
+      navigate("/DoctorDashboard", { replace: true });
+    }
+  }, []); // Empty dependency array to run only once
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -38,23 +49,27 @@ const Login = () => {
     setIsLoading(true);
     try {
       const { data } = await axios.post(
-        "https://jainam-hospital-backend.onrender.com/api/v1/user/login",
-        { 
-          email, 
-          password, 
-          confirmPassword, 
-          role: "Admin" 
-        },
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        }
+  `${API_BASE_URL}/api/v1/user/login`,
+        { email, password, confirmPassword, role },
+        { withCredentials: true, headers: { "Content-Type": "application/json" } }
       );
+      
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      
       toast.success(data.message);
-      setIsAuthenticated(true);
-      navigateTo("/");
+      
+      if (role === "Admin") {
+        setIsAuthenticated(true);
+        setAdmin(data.user);
+        navigate("/", { replace: true });
+      } else {
+        setIsDoctorAuthenticated(true);
+        setDoctor(data.user);
+        navigate("/DoctorDashboard", { replace: true });
+      }
+      
+      // Reset form
       setEmail("");
       setPassword("");
       setConfirmPassword("");
@@ -67,25 +82,25 @@ const Login = () => {
     }
   };
 
-  if (isAuthenticated) {
-    return <Navigate to={"/"} />;
-  }
+  // Redirect if already authenticated
+  if (isAuthenticated) return <Navigate to="/" />;
+  if (isDoctorAuthenticated) return <Navigate to="/DocterDashboard"/>;
 
-  const accentColor = "#00CFE8"; // A vibrant cyan/teal accent
-  const primaryDark = "#1A202C"; // Very dark (almost black)
-  const secondaryDark = "#2D3748"; // Slightly lighter dark for cards/elements
-  const textColor = "#E2E8F0"; // Light gray for text
-  const mutedTextColor = "#A0AEC0"; // Muted gray
+  // Styles (same as before)
+  const accentColor = "#00CFE8";
+  const primaryDark = "#1A202C"; 
+  const secondaryDark = "#2D3748"; 
+  const textColor = "#E2E8F0"; 
+  const mutedTextColor = "#A0AEC0";
 
-  const styles = {
+ const styles = {
     pageContainer: {
       display: "flex",
       minHeight: "100vh",
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", // Modern font
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
       backgroundColor: primaryDark,
       color: textColor,
     },
-    // Visual/Branding Section
     visualSection: {
       flex: 1,
       display: "flex",
@@ -93,14 +108,9 @@ const Login = () => {
       alignItems: "center",
       justifyContent: "center",
       padding: "3rem",
-      // Dynamic gradient background
-     // background: `linear-gradient(${gradientAngle}deg, #003973,rgba(46, 1, 130, 0.46),rgb(197, 11, 20),rgb(246, 191, 62))`, // Example: Deep blues, purples with accents
-      // Or a static but rich gradient:
-       background: `linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)`,
-      backgroundSize: "400% 400%", // For animation if using CSS keyframes
-      // animation: "gradientBG 15s ease infinite", // If using CSS keyframes
+      background: `linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)`,
       color: "white",
-      transition: "background 0.1s linear", // Smooth transition for JS-driven gradient
+      transition: "background 0.1s linear",
     },
     visualContent: {
       textAlign: "center",
@@ -119,34 +129,33 @@ const Login = () => {
     },
     lottieContainer: {
         width: "100%",
-        maxWidth: "370px", // Adjusted size
+        maxWidth: "370px",
         margin: "0 auto",
     },
-    // Form Section
     formSectionContainer: {
       flex: 1,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "2rem", // Padding around the form card
+      padding: "2rem",
     },
     formCard: {
       width: "100%",
       maxWidth: "520px",
       backgroundColor: secondaryDark,
-      padding: "3rem 2.5rem", // Generous padding
+      padding: "3rem 2.5rem",
       borderRadius: "12px",
-      boxShadow: `0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px ${accentColor}30`, // Dark shadow + subtle accent glow
+      boxShadow: `0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px ${accentColor}30`,
     },
     formHeader: {
       textAlign: "center",
       marginBottom: "2.5rem",
     },
     formIconContainer: {
-        display: "inline-flex", // Changed from flex to inline-flex
+        display: "inline-flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: `${accentColor}20`, // Accent with low opacity
+        backgroundColor: `${accentColor}20`,
         width: "60px",
         height: "60px",
         borderRadius: "50%",
@@ -155,7 +164,7 @@ const Login = () => {
     },
     formTitle: {
       fontSize: "1.8rem",
-      fontWeight: "600", // Semibold
+      fontWeight: "600",
       color: textColor,
       marginBottom: "0.25rem",
     },
@@ -182,29 +191,52 @@ const Login = () => {
       left: "15px",
       transform: "translateY(-50%)",
       color: mutedTextColor,
-      fontSize: "1.1rem", // Slightly larger icon
+      fontSize: "1.1rem",
     },
     input: {
       width: "100%",
-      padding: "0.85rem 1rem 0.85rem 3rem", // Adjusted padding for icon
+      padding: "0.85rem 1rem 0.85rem 3rem",
       backgroundColor: primaryDark,
-      border: `1px solid #4A5568`, // Tailwind gray-700
+      border: `1px solid #4A5568`,
       borderRadius: "8px",
       fontSize: "0.95rem",
       color: textColor,
       transition: "border-color 0.2s ease, box-shadow 0.2s ease",
       outline: "none",
     },
-    // Focus style for input (applied via JS for simplicity here)
     inputFocus: {
         borderColor: accentColor,
-        boxShadow: `0 0 0 3px ${accentColor}40`, // Accent glow on focus
+        boxShadow: `0 0 0 3px ${accentColor}40`,
+    },
+    roleSelector: {
+      display: "flex",
+      gap: "1rem",
+      marginBottom: "1.75rem",
+    },
+    roleButton: {
+      flex: 1,
+      padding: "0.75rem",
+      backgroundColor: primaryDark,
+      border: `1px solid #4A5568`,
+      borderRadius: "8px",
+      color: mutedTextColor,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0.5rem",
+      transition: "all 0.3s ease",
+    },
+    roleButtonActive: {
+      backgroundColor: `${accentColor}20`,
+      borderColor: accentColor,
+      color: accentColor,
     },
     button: {
       width: "100%",
       padding: "0.9rem 1.5rem",
       backgroundColor: accentColor,
-      color: primaryDark, // Dark text on accent button for contrast
+      color: primaryDark,
       border: "none",
       borderRadius: "8px",
       fontSize: "1rem",
@@ -219,14 +251,14 @@ const Login = () => {
       letterSpacing: "0.5px",
     },
     buttonLoading: {
-      backgroundColor: `${accentColor}90`, // Slightly faded accent
+      backgroundColor: `${accentColor}90`,
       cursor: "not-allowed",
     },
     spinner: {
         animation: "spin 1s linear infinite",
         height: "1.25rem",
         width: "1.25rem",
-        color: primaryDark, // Spinner color matches button text
+        color: primaryDark,
     },
     footerText: {
       marginTop: "2.5rem",
@@ -236,10 +268,9 @@ const Login = () => {
     },
   };
 
-
   return (
     <div style={styles.pageContainer} className="login-page-container">
-      {/* Visual Section (Left side on Desktop) */}
+      {/* Visual Section */}
       <div style={styles.visualSection} className="login-visual-section">
         <div style={styles.visualContent}>
           <h1 style={styles.visualTitle}>JAINAM HOSPITAL</h1>
@@ -252,18 +283,47 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Form Section (Right side on Desktop) */}
+      {/* Form Section */}
       <div style={styles.formSectionContainer} className="login-form-section">
         <div style={styles.formCard}>
           <div style={styles.formHeader}>
             <div style={styles.formIconContainer}>
-                <FaBuilding style={{ fontSize: "1.8rem", color: accentColor }} />
+                {role === "Admin" ? (
+                  <FaBuilding style={{ fontSize: "1.8rem", color: accentColor }} />
+                ) : (
+                  <FaUserMd style={{ fontSize: "1.8rem", color: accentColor }} />
+                )}
             </div>
-            <h2 style={styles.formTitle}>Admin Secure Access</h2>
-            <p style={styles.formSubtitle}>Enter your credentials to manage the portal.</p>
+            <h2 style={styles.formTitle}>
+              {role === "Admin" ? "Admin Secure Access" : "Doctor Portal"}
+            </h2>
+            <p style={styles.formSubtitle}>
+              {role === "Admin" 
+                ? "Enter your credentials to manage the portal." 
+                : "Access your doctor dashboard with secure credentials."}
+            </p>
           </div>
 
           <form onSubmit={handleLogin}>
+            {/* Role Selector */}
+            <div style={styles.roleSelector}>
+              <button
+                type="button"
+                style={role === "Admin" ? {...styles.roleButton, ...styles.roleButtonActive} : styles.roleButton}
+                onClick={() => setRole("Admin")}
+              >
+                <FaBuilding /> Admin
+              </button>
+              <button
+                type="button"
+                style={role === "Doctor" ? {...styles.roleButton, ...styles.roleButtonActive} : styles.roleButton}
+                onClick={() => setRole("Doctor")}
+              >
+                <FaUserMd /> Doctor
+              </button>
+            </div>
+
+            {/* Form inputs (same as before) */}
             <div style={styles.inputGroup}>
               <label htmlFor="email" style={styles.label}>
                 Email Address
@@ -273,13 +333,11 @@ const Login = () => {
                 <input
                   id="email"
                   type="email"
-                  placeholder="admin@jainam.com"
+                  placeholder={role === "Admin" ? "admin@jainam.com" : "doctor@jainam.com"}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   style={styles.input}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => Object.assign(e.target.style, styles.input)} // Reset to base input style
                 />
               </div>
             </div>
@@ -298,13 +356,11 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   style={styles.input}
-                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
-                  onBlur={(e) => Object.assign(e.target.style, styles.input)} // Reset to base input style
                 />
               </div>
             </div>
 
-              <div style={styles.inputGroup}>
+            <div style={styles.inputGroup}>
               <label htmlFor="confirmPassword" style={styles.label}>
                 Confirm Password
               </label>
@@ -329,7 +385,7 @@ const Login = () => {
             >
               {isLoading ? (
                 <>
-                  <svg style={styles.spinner} xmlns="https://img.freepik.com/free-vector/login-concept-illustration_114360-739.jpg?semt=ais_hybrid&w=740" fill="none" viewBox="0 0 24 24">
+                  <svg style={styles.spinner} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -350,28 +406,20 @@ const Login = () => {
         </div>
       </div>
 
-      {/* CSS for responsiveness and keyframe animations */}
+      {/* Responsive styles (same as before) */}
       <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         
-        /* Keyframes for more complex gradient animation (optional, use if not using JS driven) */
-        /* @keyframes gradientBG {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        } */
-
-        /* Responsive adjustments */
-        @media (max-width: 992px) { /* Tablet and below */
+        @media (max-width: 992px) {
           .login-page-container {
             flex-direction: column;
           }
           .login-visual-section {
-            flex: 0 1 auto; /* Don't grow, shrink if needed, auto basis */
-            min-height: 300px; /* Ensure some height */
+            flex: 0 1 auto;
+            min-height: 300px;
             padding: 2rem;
           }
           .login-visual-section .visual-title {
@@ -381,15 +429,15 @@ const Login = () => {
             max-width: 250px;
           }
           .login-form-section {
-            flex: 1; /* Take remaining space */
-            padding: 1.5rem; /* Reduce padding on mobile */
+            flex: 1;
+            padding: 1.5rem;
           }
           .form-card {
-            padding: 2rem 1.5rem; /* Reduce card padding */
+            padding: 2rem 1.5rem;
           }
         }
 
-        @media (max-width: 576px) { /* Small mobile */
+        @media (max-width: 576px) {
           .login-visual-section {
             min-height: 250px;
             padding: 1.5rem;
@@ -397,14 +445,17 @@ const Login = () => {
           .login-visual-section .visual-title {
             font-size: 1.8rem;
           }
-           .login-visual-section .lottie-container {
+          .login-visual-section .lottie-container {
             max-width: 200px;
           }
           .form-title {
              font-size: 1.5rem;
           }
           .form-card {
-            box-shadow: none; /* Simpler look on small screens */
+            box-shadow: none;
+          }
+          .role-selector {
+            flex-direction: column;
           }
         }
       `}</style>

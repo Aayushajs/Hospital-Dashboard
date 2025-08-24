@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import React, { useState, useEffect, useRef, useContext } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -30,7 +31,6 @@ const ChatRoom = () => {
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const API_BASE_URL = "https://jainam-hospital-backend.onrender.com";
   const WS_BASE_URL = "wss://jainam-hospital-backend.onrender.com";
 
   // Metrics data

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../api";
 import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
@@ -34,7 +35,7 @@ const Messages = () => {
       setLoading(true);
       try {
         const { data } = await axios.get(
-          "https://jainam-hospital-backend.onrender.com/api/v1/message/getall",
+          `${API_BASE_URL}/api/v1/message/getall`,
           { withCredentials: true }
         );
         setMessages(data.messages || []); // Ensure messages is an array
@@ -94,7 +95,7 @@ const Messages = () => {
 
     try {
       await axios.delete(
-        `https://jainam-hospital-backend.onrender.com/api/v1/message/delete/${id}`,
+  `${API_BASE_URL}/api/v1/message/delete/${id}`,
         { withCredentials: true }
       );
       setMessages(prevMessages => prevMessages.filter(msg => msg._id !== id));

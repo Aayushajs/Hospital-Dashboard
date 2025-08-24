@@ -1,10 +1,12 @@
-import  { useContext, useState, useEffect, useRef } from "react";
+import { API_BASE_URL } from "../api";
+import { useContext, useState, useEffect, useRef } from "react";
 import { TiHome } from "react-icons/ti";
 import { RiLogoutBoxFill } from "react-icons/ri";
 import { AiFillMessage, AiOutlineSearch } from "react-icons/ai";
 import { GiHamburgerMenu } from "react-icons/gi";
+import {  FaUserInjured, FaNotesMedical } from "react-icons/fa";
 import { FaUserDoctor } from "react-icons/fa6";
-import { MdAddModerator } from "react-icons/md";
+import { MdAddModerator, MdMedicalServices } from "react-icons/md";
 import { IoPersonAddSharp } from "react-icons/io5";
 import { FiChevronRight } from "react-icons/fi";
 import axios from "axios";
@@ -20,14 +22,22 @@ const Sidebar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const { isAuthenticated, setIsAuthenticated, admin } = useContext(Context);
+  const { 
+    isAuthenticated, 
+    isDoctorAuthenticated,
+    setIsAuthenticated,
+    setIsDoctorAuthenticated,
+    admin,
+    doctor
+  } = useContext(Context);
+  
   const navigateTo = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef(null);
   const sidebarRef = useRef(null);
 
   // Check if mobile view
-   useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
@@ -45,7 +55,7 @@ const Sidebar = () => {
       setLoading(false);
     }, 1000);
 
-     const handleClickOutside = (event) => {
+    const handleClickOutside = (event) => {
       if (isMobile && 
           showSidebar && 
           sidebarRef.current && 
@@ -55,9 +65,9 @@ const Sidebar = () => {
       }
     };
 
-     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
 
-   return () => {
+    return () => {
       window.removeEventListener("resize", handleResize);
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -75,20 +85,28 @@ const Sidebar = () => {
     else if (path === "/admin/addnew") setActiveLink("addAdmin");
     else if (path === "/PatientsDashboard") setActiveLink("PatientsDashboard");
     else if (path === "/admin/profile") setActiveLink("profile");
-    else if (path == "/ChatRoom") setActiveLink("ChatRoom");
+    else if (path === "/ChatRoom") setActiveLink("ChatRoom");
     else if (path === "/description/:id") setActiveLink("description/:id");
-
+    else if (path === "/DoctorDashboard") setActiveLink("DoctorDashboard");
+    else if (path === "/doctor/patients") setActiveLink("doctorPatients");
+    else if (path === "/doctor/messages") setActiveLink("doctorMessages");
+    else if (path === "/doctor/medical-records") setActiveLink("medicalRecords");
     else setActiveLink("");
   }, [location]);
 
   const handleLogout = async () => {
     try {
-      const { data } = await axios.get(
-        "https://jainam-hospital-backend.onrender.com/api/v1/user/admin/logout",
-        { withCredentials: true }
-      );
+      let endpoint = "";
+      if (isAuthenticated) {
+  endpoint = `${API_BASE_URL}/api/v1/user/admin/logout`;
+      } else if (isDoctorAuthenticated) {
+  endpoint = `${API_BASE_URL}/api/v1/user/doctor/logout`;
+      }
+      
+      const { data } = await axios.get(endpoint, { withCredentials: true });
       toast.success(data.message);
       setIsAuthenticated(false);
+      setIsDoctorAuthenticated(false);
       navigateTo("/login");
     } catch (err) {
       toast.error(err.response?.data?.message || "Logout failed");
@@ -100,18 +118,32 @@ const Sidebar = () => {
     if (isMobile) setShowSidebar(false);
   };
 
-  const navItems = [
+  // Admin nav items
+  const adminNavItems = [
     { icon: <TiHome />, label: "Dashboard", path: "/", key: "dashboard" },
-    {icon: <FaUserDoctor />, label: "My Profile", path: "/admin/profile", key: "profile" },
+    { icon: <FaUserDoctor />, label: "My Profile", path: "/admin/profile", key: "profile" },
     { icon: <FaUserDoctor />, label: "Doctors", path: "/doctors", key: "doctors" },
-    {icon: <IoPersonAddSharp />, label: "Patients", path: "/PatientsDashboard", key: "PatientsDashboard" },
+    { icon: <IoPersonAddSharp />, label: "Patients", path: "/PatientsDashboard", key: "PatientsDashboard" },
     { icon: <MdAddModerator />, label: "Add Admin", path: "/admin/addnew", key: "addAdmin" },
     { icon: <IoPersonAddSharp />, label: "Add Doctor", path: "/doctor/addnew", key: "addDoctor" },
     { icon: <GiHamburgerMenu />, label: "Chat Room", path: "/ChatRoom", key: "ChatRoom" },
     { icon: <AiFillMessage />, label: "Feedback Messages", path: "/messages", key: "messages" },
-    { icon: <AiOutlineSearch />, label: "Medical Descriptions", path: "description/:id", key: "description" }
+    { icon: <AiOutlineSearch />, label: "Medical Descriptions", path: "/description/:id", key: "description" }
   ];
 
+  // Doctor nav items
+  const doctorNavItems = [
+    { icon: <TiHome />, label: "Dashboard", path: "/DoctorDashboard", key: "DoctorDashboard" },
+    { icon: <FaUserDoctor />, label: "My Profile", path: "/doctor/profile", key: "doctorProfile" },
+    { icon: <FaUserInjured />, label: "My Patients", path: "/doctor/patients", key: "doctorPatients" },
+    { icon: <AiFillMessage />, label: "Messages", path: "/doctor/messages", key: "doctorMessages" },
+    { icon: <FaNotesMedical />, label: "Medical Records", path: "/doctor/medical-records", key: "medicalRecords" },
+    { icon: <MdMedicalServices />, label: "Prescriptions", path: "/doctor/prescriptions", key: "prescriptions" }
+  ];
+
+  // Get appropriate nav items based on user type
+  const navItems = isAuthenticated ? adminNavItems : isDoctorAuthenticated ? doctorNavItems : [];
+  
   // Filter nav items based on search term
   const filteredNavItems = navItems.filter(item =>
     item.label.toLowerCase().includes(searchTerm.toLowerCase())
@@ -127,19 +159,19 @@ const Sidebar = () => {
   }, [showSidebar]);
 
   const handleSearchClick = (e) => {
-    e.stopPropagation(); // Prevent click from bubbling to sidebar
+    e.stopPropagation();
   };
 
- const toggleSidebar = () => {
-  setShowSidebar(prev => {
-    if (!prev && isMobile) {
-      setSearchTerm(""); // Reset search when opening on mobile
-    }
-    return !prev;
-  });
-};
+  const toggleSidebar = () => {
+    setShowSidebar(prev => {
+      if (!prev && isMobile) {
+        setSearchTerm("");
+      }
+      return !prev;
+    });
+  };
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated && !isDoctorAuthenticated) return null;
 
   if (loading) {
     return (
@@ -386,6 +418,17 @@ const Sidebar = () => {
       </button>
 
       <style jsx="true">{`
+
+        .brand-info {
+          flex: 1;
+        }
+        
+        .user-name {
+          margin: 0.2rem 0 0;
+          font-size: 0.85rem;
+          color: #4d7cfe;
+          font-weight: 500;
+        }
            .sidebar-container {
           position: fixed;
           top: 0;
