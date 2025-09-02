@@ -204,7 +204,15 @@ flowchart TD
 **Credentials**  
 ```
 Email    : aayushj004@admin.com
-Password : 123456
+Password : 123456789
+```
+
+## 🔐 Test Login (Docter)  
+
+**Credentials**  
+```
+Email    : raju23@gmail.com
+Password : 123456789
 ```
 
 ### Manual Test Steps  
