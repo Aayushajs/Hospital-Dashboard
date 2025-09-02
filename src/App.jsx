@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./api";
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Login from "./components/Login";
@@ -20,6 +20,7 @@ import DescriptionDashboard from "./components/DescriptionDetailPage";
 import DescriptionBill from "./components/MedicalDescriptions";
 import DoctorDashboard from "./components/Doctor/DoctorDashboard";
 import AppointmentDetail from "./components/Doctor/AppointmentDetail"; // new detail page
+import OfflineAnimation from "./components/OfflineAnimation";
 
 const App = () => {
   const { 
@@ -32,6 +33,28 @@ const App = () => {
     doctor,
     setDoctor
   } = useContext(Context);
+
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Reload the page to ensure everything is re-initialized correctly
+      window.location.reload();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Cleanup listeners on component unmount
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchAdmin = async () => {
@@ -62,9 +85,15 @@ const App = () => {
       }
     };
 
-    fetchAdmin();
-    fetchDoctor();
-  }, [isAuthenticated, isDoctorAuthenticated]);
+    if (isOnline) {
+      fetchAdmin();
+      fetchDoctor();
+    }
+  }, [isOnline, isAuthenticated, isDoctorAuthenticated, setAdmin, setDoctor, setIsAuthenticated, setIsDoctorAuthenticated]);
+
+  if (!isOnline) {
+    return <OfflineAnimation />;
+  }
 
   return (
     <Router>

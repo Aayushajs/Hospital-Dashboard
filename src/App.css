@@ -39,6 +39,45 @@ body { background: #13131374; }
     padding: 40px 20px;
   }
 }
+.offline-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
+  text-align: center;
+}
+
+.offline-container p {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-top: 1rem;
+}
+
+.offline-container span {
+  font-size: 1rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.reload-button {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.reload-button:hover {
+  background-color: #0056b3;
+}
 
 
 
