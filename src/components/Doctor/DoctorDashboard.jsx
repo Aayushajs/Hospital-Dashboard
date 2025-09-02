@@ -17,7 +17,59 @@ import "jspdf-autotable";
 
 Chart.register(...registerables);
 
-const DoctorDashboard = () => {
+// Root-level error boundary for handling rendering errors
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Dashboard Error:", error, errorInfo);
+    this.setState({ errorInfo });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          padding: "20px", 
+          background: "#1a1a2e", 
+          color: "#e9ecef", 
+          borderRadius: "10px",
+          margin: "20px",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.2)"
+        }}>
+          <h2>Something went wrong.</h2>
+          <p style={{ color: "#ff6b6b" }}>
+            {this.state.error && this.state.error.toString()}
+          </p>
+          <button
+            style={{
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              padding: "8px 15px",
+              borderRadius: "5px",
+              cursor: "pointer",
+              marginTop: "15px"
+            }}
+            onClick={() => window.location.reload()}
+          >
+            Reload Dashboard
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const DoctorDashboardContent = () => {
   const [appointments, setAppointments] = useState([]);
   const [appointmentsCount, setAppointmentsCount] = useState(0);
   const [patientsCount, setPatientsCount] = useState(0);
@@ -66,10 +118,11 @@ const DoctorDashboard = () => {
         ]);
 
         // Process appointments
-        setAppointments(appointmentsRes.data.appointments);
+        const appointmentsData = appointmentsRes.data.appointments;
+        setAppointments(appointmentsData);
         setAppointmentsCount(appointmentsRes.data.totalAppointments);
 
-        const statusCounts = appointmentsRes.data.appointments.reduce(
+        const statusCounts = appointmentsData.reduce(
           (acc, curr) => {
             acc[curr.status.toLowerCase()] =
               (acc[curr.status.toLowerCase()] || 0) + 1;
@@ -87,6 +140,10 @@ const DoctorDashboard = () => {
 
         // Process patients
         setPatientsCount(patientsRes.data.totalCount);
+        
+        // Process chart data immediately after fetching
+        const processedData = processChartData(appointmentsData);
+        setChartData(processedData);
 
         // Wait for at least 1 second before hiding loader
         setTimeout(() => setLoading(false), 1000);
@@ -111,6 +168,7 @@ const DoctorDashboard = () => {
         { withCredentials: true }
       );
       
+      // Update appointments array with new status
       setAppointments((prevAppointments) =>
         prevAppointments.map((appointment) =>
           appointment._id === appointmentId
@@ -119,6 +177,7 @@ const DoctorDashboard = () => {
         )
       );
 
+      // Update stats counters
       setStats((prev) => {
         const newStats = { ...prev };
         const oldStatus = appointments
@@ -145,10 +204,27 @@ const DoctorDashboard = () => {
   `${API_BASE_URL}/api/v1/appointment/delete/${appointmentId}`,
         { withCredentials: true }
       );
+      
+      // Get the appointment status before removing it from the array
+      const appointmentToDelete = appointments.find(app => app._id === appointmentId);
+      const statusToUpdate = appointmentToDelete?.status.toLowerCase();
+      
+      // Update appointments array
       setAppointments((prev) =>
         prev.filter((app) => app._id !== appointmentId)
       );
+      
+      // Update appointment count
       setAppointmentsCount((prev) => prev - 1);
+      
+      // Update stats counters if we found the appointment
+      if (statusToUpdate) {
+        setStats(prev => ({
+          ...prev,
+          [statusToUpdate]: Math.max(0, prev[statusToUpdate] - 1)
+        }));
+      }
+      
       toast.success(data.message);
     } catch (error) {
       toast.error(
@@ -280,7 +356,359 @@ const DoctorDashboard = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
-  // Chart data
+  // Process appointment data for charts
+  const processChartData = (appointmentsData) => {
+    const currentDate = new Date();
+  const now = currentDate.getTime();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  // Hour labels (24h)
+  const hourLabels = Array.from({ length: 24 }, (_, h) => h.toString().padStart(2, '0'));
+    
+    // Status Data for Appointment Status Chart (Monthly breakdown)
+    const statusData = monthNames.map(month => ({
+      month,
+      completed: 0,
+      cancelled: 0
+    }));
+    
+    // Monthly data initialization
+    const monthlyData = Array(12).fill(0);
+    const monthlyCompleted = Array(12).fill(0);
+    const monthlyPending = Array(12).fill(0);
+    const monthlyAccepted = Array(12).fill(0);
+    const monthlyRejected = Array(12).fill(0);
+    
+    // Year data by months (for yearly view)
+    const yearlyPending = Array(12).fill(0);
+    const yearlyAccepted = Array(12).fill(0);
+    const yearlyCompleted = Array(12).fill(0);
+    const yearlyRejected = Array(12).fill(0);
+
+  // Daily (last 24 hours) data initialization (index: hour 0-23 of current day)
+  const dailyPending = Array(24).fill(0);
+  const dailyAccepted = Array(24).fill(0);
+  const dailyCompleted = Array(24).fill(0);
+  const dailyRejected = Array(24).fill(0);
+    
+    // Weekly data initialization (for weekly view)
+    const weeklyAppointments = Array(7).fill(0);
+    const weeklyPending = Array(7).fill(0);
+    const weeklyAccepted = Array(7).fill(0);
+    const weeklyCompleted = Array(7).fill(0);
+    const weeklyRejected = Array(7).fill(0);
+    const weeklyPatients = Array(7).fill(0);
+    
+    // Month data initialization (for monthly view - days of the month)
+    const daysInCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const daysLabels = Array.from({ length: daysInCurrentMonth }, (_, i) => (i + 1).toString());
+    const monthlyViewData = Array(daysInCurrentMonth).fill(0);
+    const monthlyViewPending = Array(daysInCurrentMonth).fill(0);
+    const monthlyViewAccepted = Array(daysInCurrentMonth).fill(0);
+    const monthlyViewCompleted = Array(daysInCurrentMonth).fill(0);
+    const monthlyViewRejected = Array(daysInCurrentMonth).fill(0);
+    
+    // Get the start of the current week (Sunday)
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    
+    // Get the start of the current month
+    const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    // Process each appointment for various time frames
+    appointmentsData.forEach(appointment => {
+      const date = new Date(appointment.appointment_date);
+      const month = date.getMonth(); // 0-11
+      const dayOfWeek = date.getDay(); // 0-6 (Sunday-Saturday)
+      const dayOfMonth = date.getDate() - 1; // 0-30
+      const status = appointment.status.toLowerCase();
+  const hour = date.getHours();
+      
+      // Process for status chart (monthly)
+      if (status === 'completed') {
+        statusData[month].completed++;
+      } else if (status === 'rejected') {
+        statusData[month].cancelled++;
+      }
+      
+      // Process for monthly appointments totals
+      monthlyData[month]++;
+      
+      // Track appointments by status per month (yearly view)
+      if (status === 'completed') {
+        monthlyCompleted[month]++;
+        yearlyCompleted[month]++;
+      } else if (status === 'pending') {
+        monthlyPending[month]++;
+        yearlyPending[month]++;
+      } else if (status === 'accepted') {
+        monthlyAccepted[month]++;
+        yearlyAccepted[month]++;
+      } else if (status === 'rejected') {
+        monthlyRejected[month]++;
+        yearlyRejected[month]++;
+      }
+      
+      // Process for weekly view (if appointment is in current week)
+      if (date >= weekStart && date <= currentDate) {
+        weeklyAppointments[dayOfWeek]++;
+        
+        if (status === 'pending') {
+          weeklyPending[dayOfWeek]++;
+        } else if (status === 'accepted') {
+          weeklyAccepted[dayOfWeek]++;
+        } else if (status === 'completed') {
+          weeklyCompleted[dayOfWeek]++;
+        } else if (status === 'rejected') {
+          weeklyRejected[dayOfWeek]++;
+        }
+        
+        // Count patients for weekly view
+        weeklyPatients[dayOfWeek]++;
+      }
+      
+      // Process for monthly view (if appointment is in current month)
+      if (date >= monthStart && date <= currentDate && dayOfMonth < daysInCurrentMonth) {
+        monthlyViewData[dayOfMonth]++;
+        
+        if (status === 'pending') {
+          monthlyViewPending[dayOfMonth]++;
+        } else if (status === 'accepted') {
+          monthlyViewAccepted[dayOfMonth]++;
+        } else if (status === 'completed') {
+          monthlyViewCompleted[dayOfMonth]++;
+        } else if (status === 'rejected') {
+          monthlyViewRejected[dayOfMonth]++;
+        }
+      }
+
+      // Process for daily (last 24h) view - include appointments within last 24 hours relative to now
+      const diffHours = (now - date.getTime()) / (1000 * 60 * 60);
+      if (diffHours >= 0 && diffHours < 24) {
+        if (status === 'pending') {
+          dailyPending[hour]++;
+        } else if (status === 'accepted') {
+          dailyAccepted[hour]++;
+        } else if (status === 'completed') {
+          dailyCompleted[hour]++;
+        } else if (status === 'rejected') {
+          dailyRejected[hour]++;
+        }
+      }
+    });
+    
+    // Create formatted monthly appointments data
+    const monthlyAppointments = monthNames.map((month, index) => ({
+      month,
+      appointments: monthlyData[index],
+      completed: monthlyCompleted[index],
+      pending: monthlyPending[index],
+      accepted: monthlyAccepted[index],
+      rejected: monthlyRejected[index]
+    }));
+    
+ 
+    const analyticsData = dayLabels.map((day, index) => ({
+      name: day,
+      sales: weeklyAppointments[index], 
+      subs: Math.round(weeklyCompleted[index]) 
+    }));
+    // Format data for weekly view (mini charts and main chart)
+    const weeklyLineGraphData = {
+      labels: dayLabels,
+      datasetsArr: [
+        {
+          label: "Pending",
+          data: weeklyPending,
+          borderColor: "#ffc107",
+          backgroundColor: "rgba(255,193,7,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Accepted",
+          data: weeklyAccepted,
+          borderColor: "#28a745",
+          backgroundColor: "rgba(40,167,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Completed",
+          data: weeklyCompleted,
+          borderColor: "#0d6efd", 
+          backgroundColor: "rgba(13,110,253,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Rejected",
+          data: weeklyRejected,
+          borderColor: "#dc3545",
+          backgroundColor: "rgba(220,53,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+  analyticsData: analyticsData,
+  weeklyAppointments: weeklyAppointments,
+  weeklyPatients: weeklyPatients
+    };
+    
+    // Format data for monthly view (days of current month)
+    const monthlyLineGraphData = {
+      labels: daysLabels,
+      datasetsArr: [
+        {
+          label: "Pending",
+          data: monthlyViewPending,
+          borderColor: "#ffc107",
+          backgroundColor: "rgba(255,193,7,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Accepted", 
+          data: monthlyViewAccepted,
+          borderColor: "#28a745",
+          backgroundColor: "rgba(40,167,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Completed",
+          data: monthlyViewCompleted,
+          borderColor: "#0d6efd",
+          backgroundColor: "rgba(13,110,253,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Rejected",
+          data: monthlyViewRejected,
+          borderColor: "#dc3545",
+          backgroundColor: "rgba(220,53,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+      analyticsData: null
+    };
+    
+    // Format data for yearly view (months of the year)
+    const yearlyLineGraphData = {
+      labels: monthNames,
+      datasetsArr: [
+        {
+          label: "Pending",
+          data: yearlyPending,
+          borderColor: "#ffc107",
+          backgroundColor: "rgba(255,193,7,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Accepted",
+          data: yearlyAccepted,
+          borderColor: "#28a745",
+          backgroundColor: "rgba(40,167,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Completed",
+          data: yearlyCompleted,
+          borderColor: "#0d6efd",
+          backgroundColor: "rgba(13,110,253,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Rejected",
+          data: yearlyRejected,
+          borderColor: "#dc3545",
+          backgroundColor: "rgba(220,53,69,0.2)",
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+      analyticsData: null
+    };
+
+    // Format data for daily 24h view
+    const dailyLineGraphData = {
+      labels: hourLabels,
+      datasetsArr: [
+        {
+          label: 'Pending',
+          data: dailyPending,
+          borderColor: '#ffc107',
+          backgroundColor: 'rgba(255,193,7,0.2)',
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Accepted',
+          data: dailyAccepted,
+          borderColor: '#28a745',
+          backgroundColor: 'rgba(40,167,69,0.2)',
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Completed',
+          data: dailyCompleted,
+          borderColor: '#0d6efd',
+          backgroundColor: 'rgba(13,110,253,0.2)',
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Rejected',
+          data: dailyRejected,
+          borderColor: '#dc3545',
+          backgroundColor: 'rgba(220,53,69,0.2)',
+          fill: true,
+          tension: 0.4
+        }
+      ],
+      analyticsData: null
+    };
+    
+    // Return all processed data
+    return {
+      statusData,
+      monthlyAppointments,
+      weeklyLineGraphData,   // Weekly view (days of the week)
+      monthlyLineGraphData,  // Monthly view (days of the month)
+  yearlyLineGraphData,   // Yearly view (months of the year)
+  dailyLineGraphData     // Daily 24h view
+    };
+  };
+  
+  // Process chart data when appointments change
+  const [chartData, setChartData] = useState({
+    statusData: [],
+    monthlyAppointments: [],
+    weeklyLineGraphData: {},
+    monthlyLineGraphData: {},
+  yearlyLineGraphData: {},
+  dailyLineGraphData: {}
+  });
+
+  // Update chart data when appointments change
+  useEffect(() => {
+    if (appointments.length > 0) {
+      const processedData = processChartData(appointments);
+      setChartData(processedData);
+    }
+  }, [appointments]);
+  
+  // Extract chart data from state
+  const { statusData, monthlyAppointments, weeklyLineGraphData, monthlyLineGraphData, yearlyLineGraphData, dailyLineGraphData } = chartData;
+  
+  // Main status chart data structure for donut chart - updating with current stats
   const appointmentStatusData = {
     labels: ["Pending", "Accepted", "Rejected", "Completed"],
     datasets: [
@@ -303,39 +731,9 @@ const DoctorDashboard = () => {
       },
     ],
   };
-
-  const monthlyAppointmentsData = {
-    labels: [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ],
-    datasets: [
-      {
-        label: "Appointments per Month",
-        data: [15, 22, 18, 25, 30, 28, 35, 32, 30, 28, 25, 20],
-        backgroundColor: "rgba(13, 110, 253, 0.5)",
-        borderColor: "rgba(13, 110, 253, 1)",
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      },
-    ],
-  };
-
-  const miniLineGraphData = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-    datasets: [
-      {
-        label: "Weekly Stats",
-        data: [25, 40, 30, 45],
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        tension: 0.4,
-        fill: true,
-        borderWidth: 2,
-      },
-    ],
-  };
+  
+  // Monthly trend chart data
+  const monthlyAppointmentsData = monthlyAppointments;
 
   if (!isDoctorAuthenticated) {
     return <Navigate to="/doctor/login" />;
@@ -362,7 +760,10 @@ const DoctorDashboard = () => {
         stats={stats}
         appointmentsCount={appointmentsCount}
         patientsCount={patientsCount}
-        miniLineGraphData={miniLineGraphData}
+        weeklyLineGraphData={weeklyLineGraphData}
+        monthlyLineGraphData={monthlyLineGraphData}
+        yearlyLineGraphData={yearlyLineGraphData}
+        dailyLineGraphData={dailyLineGraphData}
         appointmentStatusData={appointmentStatusData}
         monthlyAppointmentsData={monthlyAppointmentsData}
       />
@@ -748,5 +1149,14 @@ const DoctorDashboard = () => {
 };
 
 
+
+// Wrapper component with error boundary
+const DoctorDashboard = () => {
+  return (
+    <ErrorBoundary>
+      <DoctorDashboardContent />
+    </ErrorBoundary>
+  );
+};
 
 export default DoctorDashboard;

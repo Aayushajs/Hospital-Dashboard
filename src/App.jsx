@@ -19,7 +19,7 @@ import ChatRoom from "./components/ChatRoom";
 import DescriptionDashboard from "./components/DescriptionDetailPage";
 import DescriptionBill from "./components/MedicalDescriptions";
 import DoctorDashboard from "./components/Doctor/DoctorDashboard";
-// import DoctorProfile from "./components/Doctor/DoctorProfile";
+import AppointmentDetail from "./components/Doctor/AppointmentDetail"; // new detail page
 
 const App = () => {
   const { 
@@ -96,10 +96,7 @@ const App = () => {
           <>
             <Route path="/" element={<DoctorDashboard />} />
             <Route path="/DocterDashboard" element={<DoctorDashboard />} />
-            {/* <Route path="/doctor/profile" element={<DoctorProfile />} />
-            <Route path="/doctor/messages" element={<Messages />} />
-            <Route path="/doctor/patients" element={<PatientsDashboard />} />
-            <Route path="/doctor/description/:id" element={<DescriptionDashboard />} /> */}
+            <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
           </>
         )}
         

@@ -1,4 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Preserve previous base resets and font */
 * {
   margin: 0;
   padding: 0;
@@ -6,10 +11,7 @@
   overflow-x: hidden;
   font-family: "Montserrat", sans-serif;
 }
-body {
-  background: #13131374;
-  
-}
+body { background: #13131374; }
 .container {
   padding: 0 100px;
 }

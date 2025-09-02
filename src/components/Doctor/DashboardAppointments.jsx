@@ -4,6 +4,7 @@ import { FiDownload, FiFileText, FiCheckCircle } from "react-icons/fi";
 import { FaIndianRupeeSign } from "react-icons/fa6";
 import Lottie from "lottie-react";
 import animationData from "../../../public/notfountAnimation.json";
+import { useNavigate } from 'react-router-dom'; // added
 
 const DocterDashboardAppointments = ({ 
   isMobile,
@@ -24,6 +25,7 @@ const DocterDashboardAppointments = ({
   handleUpdateStatus,
   handleDeleteAppointment
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="appointments-table">
       <div className="table-header">
@@ -78,10 +80,10 @@ const DocterDashboardAppointments = ({
           </div>
           <div className="export-buttons">
             <button className="export-btn excel" onClick={exportToExcel}>
-              <FiDownload /> {!isMobile ? "Excel" : ""}
+              <FiDownload /> {isMobile ? "" : "Excel"}
             </button>
             <button className="export-btn pdf" onClick={exportToPDF}>
-              <FiFileText /> {!isMobile ? "PDF" : ""}
+              <FiFileText /> {isMobile ? "" : "PDF"}
             </button>
           </div>
         </div>
@@ -104,7 +106,14 @@ const DocterDashboardAppointments = ({
           <tbody>
             {currentAppointments && currentAppointments.length > 0 ? (
               currentAppointments.map((appointment, index) => (
-                <tr key={appointment._id}>
+                <tr key={appointment._id} onClick={(e)=>{
+                  // avoid triggering when interacting with controls
+                  const tag = e.target.tagName.toLowerCase();
+                  if(['select','option','input','button','svg','path'].includes(tag)) {
+                    return;
+                  }
+                  navigate(`/doctor/appointment/${appointment._id}`);
+                }} style={{cursor:'pointer'}}>
                   <td>{index + 1}</td>
                   <td>
                     <div className="patient-info">
