@@ -201,7 +201,7 @@ const AppointmentDetail = () => {
         </>
       )}
       <style jsx="true">{`
-        .appointment-detail-page {position:relative;background:#0f1629;color:#e9ecef;min-height:100vh;padding:1.2rem 2.2rem;margin-left:270px;overflow:hidden;font-family:'Inter',sans-serif;}
+  .appointment-detail-page {position:relative;background:#0f1629;color:#e9ecef;min-height:100vh;padding:1.2rem 2.2rem;margin-left:var(--sidebar-shift,0);transition:margin-left .32s cubic-bezier(.4,0,.2,1);overflow:hidden;font-family:'Inter',sans-serif;}
         @media (max-width:1200px){.appointment-detail-page{margin-left:0;padding:1.2rem 1.2rem;}}
         .gradient-bg{position:absolute;inset:0;background:radial-gradient(circle at 25% 15%,rgba(77,124,254,0.15),transparent 60%),radial-gradient(circle at 85% 70%,rgba(13,110,253,0.12),transparent 65%);pointer-events:none;}
         .detail-header{position:relative;z-index:2;display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;flex-wrap:wrap;}

@@ -1,7 +1,7 @@
 import React from "react";
 
 const DashboardSkeleton = () => (
-  <div className="dashboard-container">
+  <div className="dashboard-container DoctorDashboardMain">
     <div className="skeleton-loader">
       {/* Top Header Skeleton */}
       <div className="skeleton-header">
@@ -59,7 +59,8 @@ const DashboardSkeleton = () => (
     <style jsx>{`
       .skeleton-loader {
         padding: 1.5rem;
-        margin-left: 270px;
+        margin-left: var(--sidebar-shift,0);
+        transition: margin-left .32s cubic-bezier(.4,0,.2,1);
         background-color: rgba(32, 32, 52, 0.92);
         min-height: 100vh;
       }

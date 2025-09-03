@@ -13,7 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Sidebar from "./components/Sidebar";
 import AddNewAdmin from "./components/AddNewAdmin";
 import "./App.css";
-import ProfilePage from "./components/AdminProfile";
+import ProfilePage from "./components/Profile"; // unified profile for admin & doctor
 import PatientsDashboard from "./components/getAllpasent";
 import ChatRoom from "./components/ChatRoom";
 import DescriptionDashboard from "./components/DescriptionDetailPage";
@@ -105,7 +105,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         
         {/* Admin Routes */}
-        {isAuthenticated && (
+    {isAuthenticated && (
           <>
             <Route path="/" element={<Dashboard />} />
             <Route path="/doctor/addnew" element={<AddNewDoctor />} />
@@ -113,6 +113,7 @@ const App = () => {
             <Route path="/messages" element={<Messages />} />
             <Route path="/doctors" element={<Doctors />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
+      <Route path="/profile" element={<ProfilePage />} />
             <Route path="/PatientsDashboard" element={<PatientsDashboard />} />
             <Route path="/description-bill" element={<DescriptionBill />} />
             <Route path="/description/:id" element={<DescriptionDashboard />} />
@@ -121,11 +122,13 @@ const App = () => {
         )}
         
         {/* Doctor Routes */}
-        {isDoctorAuthenticated && (
+    {isDoctorAuthenticated && (
           <>
             <Route path="/" element={<DoctorDashboard />} />
             <Route path="/DocterDashboard" element={<DoctorDashboard />} />
             <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
+      <Route path="/doctor/profile" element={<ProfilePage />} />
+      <Route path="/profile" element={<ProfilePage />} />
           </>
         )}
         

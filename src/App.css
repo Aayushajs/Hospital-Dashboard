@@ -11,7 +11,13 @@
   overflow-x: hidden;
   font-family: "Montserrat", sans-serif;
 }
-body { background: #13131374; }
+body {
+  background: radial-gradient(circle at 20% 20%, #1f2b46 0%, #141b29 45%, #0e1420 100%);
+  color: #e9ecef;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
 .container {
   padding: 0 100px;
 }
@@ -22,7 +28,7 @@ body { background: #13131374; }
 }
 .page {
   margin-left: 190px;
-  background: #e5e5e5;
+  background: #1a1a2e;
   padding: 40px;
   height: 100%;
   border-top-left-radius: 10px;

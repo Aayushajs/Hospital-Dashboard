@@ -322,7 +322,7 @@ const ChatRoom = () => {
   }
 
   return (
-    <div className="chat-room-container">
+  <div className="chat-room-container chatroom-container">
       {/* Metrics Section */}
       <div className="metrics-bar">
         <div className="metric-card total-patients">
@@ -336,7 +336,7 @@ const ChatRoom = () => {
         <div className="metric-card doctor-appointments">
           <FaUserMd className="metric-icon" />
           <div className="metric-info">
-            <h4>Your Appointments</h4>
+            <h4>Hospital Appointments</h4>
             <p>{doctorAppointments}</p>
           </div>
         </div>
@@ -352,7 +352,7 @@ const ChatRoom = () => {
 
       {/* Appointments List */}
       <div className="appointments-section">
-        <h3>Your Appointments</h3>
+        <h3>Hospital Appointments</h3>
         <div className="appointments-list">
           {appointments.length > 0 ? (
             appointments.map(appointment => {
@@ -568,7 +568,8 @@ const ChatRoom = () => {
           color: #e0e0e0;
           min-height: 100vh;
           padding: 1.5rem 2rem;
-          margin-left: 270px;
+          margin-left: var(--sidebar-shift, 0);
+          transition: margin-left .32s cubic-bezier(.4,0,.2,1);
           font-family: 'Roboto', sans-serif;
         }
 

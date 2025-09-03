@@ -516,10 +516,14 @@ const Dashboard = () => {
         <style jsx="true">{`
           .skeleton-loader {
             padding: 1.5rem;
-            margin-left: 270px;
             background-color: rgba(32, 32, 52, 0.92);
             min-height: 100vh;
+            width:100%;
           }
+          /* Container base (matches normal dashboard) */
+          .dashboard-container {background-color:#1a1a2e;color:#e9ecef;min-height:100vh;padding:1.5rem;}
+          @media (max-width:1200px){.dashboard-container{padding:1rem;}}
+          @media (max-width:768px){.dashboard-container{padding:1rem;}}
 
           .skeleton-header {
             display: flex;
@@ -736,7 +740,7 @@ const Dashboard = () => {
 
           @media (max-width: 768px) {
             .skeleton-loader {
-              margin-left: 0;
+              margin-left: 0 !important;
               padding: 1rem;
             }
 
@@ -849,8 +853,10 @@ const Dashboard = () => {
           color: #e9ecef;
           min-height: 100vh;
           padding: 1.5rem;
-          margin-left: 270px;
+          margin-left: 270px; /* match profile page */
+          transition: margin-left .38s cubic-bezier(.4,0,.2,1);
         }
+        body.sidebar-collapsed .dashboard-container { margin-left:0 !important; }
 
         /* Top Header Styles */
         .dashboard-top-header {
@@ -1753,11 +1759,7 @@ const Dashboard = () => {
 
         /* Responsive adjustments */
         @media (max-width: 1200px) {
-          .dashboard-container {
-            margin-left: 0;
-            padding-left: 1rem;
-            padding-right: 1rem;
-          }
+          .dashboard-container { margin-left:0; padding-left:1rem; padding-right:1rem; }
         }
 
         @media (max-width: 992px) {

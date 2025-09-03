@@ -744,7 +744,7 @@ const DoctorDashboardContent = () => {
   }
 
   return (
-    <div className="dashboard-container">
+  <div className="dashboard-container DoctorDashboardMain">
       <FloatingCalculatorButton />
       
       {/* Top Header with Search, Notifications and Profile */}
@@ -794,8 +794,8 @@ const DoctorDashboardContent = () => {
           color: #e9ecef;
           min-height: 100vh;
           padding: 1.5rem;
-          margin-left: 270px;
-          transition: all 0.3s ease;
+          margin-left: var(--sidebar-shift,0);
+          transition: margin-left .32s cubic-bezier(.4,0,.2,1), background-color .3s ease;
         }
   .appointments-table {
     background-color: #16213e;
@@ -1132,7 +1132,7 @@ const DoctorDashboardContent = () => {
   }
         @media (max-width: 1200px) {
           .dashboard-container {
-            margin-left: 0;
+            margin-left: 0 !important;
             padding-left: 1rem;
             padding-right: 1rem;
           }

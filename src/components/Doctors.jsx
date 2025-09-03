@@ -709,7 +709,8 @@ const paginate = (pageNumber) => setCurrentPage(pageNumber);
             color: #e0e0e0;
             min-height: 100vh;
             padding: 1.5rem 2rem;
-            margin-left: 270px;
+            margin-left: var(--sidebar-shift,0);
+            transition: margin-left .32s cubic-bezier(.4,0,.2,1);
             font-family: 'Roboto', 'Segoe UI', sans-serif;
           }
 

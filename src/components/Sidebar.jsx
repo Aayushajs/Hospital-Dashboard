@@ -20,6 +20,7 @@ const Sidebar = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [activeLink, setActiveLink] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isCollapsedDesktop, setIsCollapsedDesktop] = useState(false); // desktop/tablet collapse state
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { 
@@ -42,9 +43,10 @@ const Sidebar = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       if (!mobile) {
-        setShowSidebar(true);
+  setShowSidebar(true); // always show container on desktop
       } else {
         setShowSidebar(false);
+  setIsCollapsedDesktop(false); // reset collapse when entering mobile
       }
     };
 
@@ -73,25 +75,58 @@ const Sidebar = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isMobile, showSidebar]);
+
+  // Apply/remove body class so main content can use full width when collapsed
+  useEffect(() => {
+    document.body.classList.add('sidebar-enabled');
+    if (!isMobile) {
+      if (isCollapsedDesktop) {
+        document.body.classList.add('sidebar-collapsed');
+      } else {
+        document.body.classList.remove('sidebar-collapsed');
+      }
+    }
+  // Update CSS variable for smoother, centralized layout shift
+  const shift = (!isMobile && !isCollapsedDesktop) ? '280px' : '0px';
+  document.documentElement.style.setProperty('--sidebar-shift', shift);
+    return () => {
+      document.body.classList.remove('sidebar-collapsed');
+    };
+  }, [isCollapsedDesktop, isMobile]);
   
 
   // Set active link based on current route
   useEffect(() => {
     const path = location.pathname;
-    if (path === "/") setActiveLink("dashboard");
-    else if (path === "/doctors") setActiveLink("doctors");
-    else if (path === "/messages") setActiveLink("messages");
-    else if (path === "/doctor/addnew") setActiveLink("addDoctor");
-    else if (path === "/admin/addnew") setActiveLink("addAdmin");
-    else if (path === "/PatientsDashboard") setActiveLink("PatientsDashboard");
-    else if (path === "/admin/profile") setActiveLink("profile");
-    else if (path === "/ChatRoom") setActiveLink("ChatRoom");
-    else if (path === "/description/:id") setActiveLink("description/:id");
-    else if (path === "/DoctorDashboard") setActiveLink("DoctorDashboard");
-    else if (path === "/doctor/patients") setActiveLink("doctorPatients");
-    else if (path === "/doctor/messages") setActiveLink("doctorMessages");
-    else if (path === "/doctor/medical-records") setActiveLink("medicalRecords");
-    else setActiveLink("");
+    if (path === "/") {
+      setActiveLink("dashboard");
+    } else if (path === "/doctors") {
+      setActiveLink("doctors");
+    } else if (path === "/messages") {
+      setActiveLink("messages");
+    } else if (path === "/doctor/addnew") {
+      setActiveLink("addDoctor");
+    } else if (path === "/admin/addnew") {
+      setActiveLink("addAdmin");
+    } else if (path === "/PatientsDashboard") {
+      setActiveLink("PatientsDashboard");
+    } else if (path === "/admin/profile") {
+      setActiveLink("profile");
+    } else if (path === "/ChatRoom") {
+      setActiveLink("ChatRoom");
+    } else if (path === "/description/:id") {
+      setActiveLink("description/:id");
+    } else if (path === "/DoctorDashboard") {
+      setActiveLink("DoctorDashboard");
+    } else if (path === "/doctor/patients") {
+      setActiveLink("doctorPatients");
+    } else if (path === "/doctor/messages") {
+      setActiveLink("doctorMessages");
+    } else if (path === "/doctor/medical-records") {
+      setActiveLink("medicalRecords");
+    } else {
+      setActiveLink("");
+    }
   }, [location]);
 
   const handleLogout = async () => {
@@ -115,7 +150,9 @@ const Sidebar = () => {
 
   const navigate = (path) => {
     navigateTo(path);
-    if (isMobile) setShowSidebar(false);
+    if (isMobile) {
+      setShowSidebar(false);
+    }
   };
 
   // Admin nav items
@@ -171,7 +208,9 @@ const Sidebar = () => {
     });
   };
 
-  if (!isAuthenticated && !isDoctorAuthenticated) return null;
+  if (!isAuthenticated && !isDoctorAuthenticated) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -333,7 +372,7 @@ const Sidebar = () => {
       )}
 
       {/* Sidebar */}
-      <nav className={`sidebar-container ${showSidebar ? "show" : ""}`}
+      <nav className={`sidebar-container ${showSidebar ? "show" : ""} ${!isMobile && isCollapsedDesktop ? 'collapsed-desktop' : ''}`}
         ref={sidebarRef}>
         <div className="sidebar-header">
           <div className="brand-container">
@@ -347,6 +386,16 @@ const Sidebar = () => {
               <p className="brand-tagline">Quality Healthcare</p>
             </div>
           </div>
+          {!isMobile && (
+            <button
+              type="button"
+              className={`collapse-toggle-btn ${isCollapsedDesktop ? 'collapsed' : ''}`}
+              onClick={() => setIsCollapsedDesktop(prev => !prev)}
+              aria-label={isCollapsedDesktop ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <FiChevronRight />
+            </button>
+          )}
           <button 
             className="close-button"
             onClick={() => setShowSidebar(false)}
@@ -408,6 +457,18 @@ const Sidebar = () => {
         </div>
       </nav>
 
+      {/* Reopen arrow (desktop/tablet only) when collapsed */}
+      {!isMobile && isCollapsedDesktop && (
+        <button
+          type="button"
+          className="sidebar-reopen-btn"
+          onClick={() => setIsCollapsedDesktop(false)}
+          aria-label="Open sidebar"
+        >
+          <FiChevronRight />
+        </button>
+      )}
+
       {/* Hamburger menu */}
        <button 
         className="menu-toggle"
@@ -418,6 +479,25 @@ const Sidebar = () => {
       </button>
 
       <style jsx="true">{`
+
+  :root { --sidebar-width:280px; --sidebar-shift:280px; }
+
+        /* Smooth margin shift for all primary sections across project */
+  body.sidebar-enabled .profile-container,
+        body.sidebar-enabled .dashboard-container,
+        body.sidebar-enabled .DoctorDashboardMain,
+  body.sidebar-enabled .doctors-dashboard-container,
+        body.sidebar-enabled .appointments-container,
+        body.sidebar-enabled .patients-container,
+        body.sidebar-enabled .add-doctor-container,
+        body.sidebar-enabled .add-admin-container,
+        body.sidebar-enabled .messages-container,
+        body.sidebar-enabled .chatroom-container,
+        body.sidebar-enabled .medical-records-container,
+        body.sidebar-enabled .prescriptions-container {
+          margin-left: var(--sidebar-shift) !important;
+          transition: margin-left .32s cubic-bezier(.4,0,.2,1);
+        }
 
         .brand-info {
           flex: 1;
@@ -439,12 +519,67 @@ const Sidebar = () => {
           color: #e9ecef;
           z-index: 1001; /* Higher than overlay */
           transform: translateX(-100%);
-          transition: transform 0.3s ease;
+          transition: transform .38s cubic-bezier(.4,0,.2,1);
           display: flex;
           flex-direction: column;
           box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
           border-right: 1px solid #2d3748;
+          will-change: transform;
+          contain: layout paint;
         }
+
+        /* Desktop collapse state */
+        .sidebar-container.collapsed-desktop { transform: translateX(-100%); }
+
+        /* Floating opener when collapsed */
+        .collapsed-desktop + .menu-toggle-desktop-opener { opacity:1; pointer-events:auto; }
+
+        .collapse-toggle-btn {
+          position: absolute;
+          top: 0.3rem;
+          right: 0rem;
+          background:#0f3460;
+          border:1px solid #2d4a70;
+          color:#e2e8f0;
+          width:32px;
+          height:32px;
+          border-radius:8px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          transition:.25s;
+          font-size:1rem;
+        }
+        .collapse-toggle-btn:hover {background:#1d4d85;border-color:#1d4d85;color:#fff;}
+        .collapse-toggle-btn svg {transition:transform .3s ease;}
+        .collapse-toggle-btn.collapsed svg {transform:rotate(180deg);}  
+
+        /* Hide internal collapse button when fully collapsed (we use external reopen) */
+        .collapsed-desktop .collapse-toggle-btn { display:none; }
+
+        .sidebar-reopen-btn {
+          position: fixed;
+          top: 0.6rem;
+          left: 0.4rem;
+          width: 34px;
+            height:34px;
+          background:#0f3460;
+          border:1px solid #2d4a70;
+          color:#e2e8f0;
+          border-radius:10px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          cursor:pointer;
+          z-index:1200;
+          transition:.25s;
+          font-size:1.05rem;
+          box-shadow:0 4px 14px -4px rgba(0,0,0,.55);
+        }
+        .sidebar-reopen-btn:hover {background:#1d4d85;border-color:#1d4d85;color:#fff;}
+
+  /* Old individual overrides replaced by global sidebar-enabled rules */
 
         .sidebar-container.show {
           transform: translateX(0);
@@ -741,6 +876,8 @@ const Sidebar = () => {
           .menu-toggle {
             display: none;
           }
+          .sidebar-container.collapsed-desktop { transform: translateX(-100%); }
+          /* Internal button hidden; external reopen button handles showing */
         }
 
         @media (max-width: 480px) {

@@ -285,7 +285,7 @@ const Login = () => {
 
       {/* Form Section */}
       <div style={styles.formSectionContainer} className="login-form-section">
-        <div style={styles.formCard}>
+        <div style={styles.formCard} className="form-card">
           <div style={styles.formHeader}>
             <div style={styles.formIconContainer}>
                 {role === "Admin" ? (
@@ -407,7 +407,7 @@ const Login = () => {
       </div>
 
       {/* Responsive styles (same as before) */}
-      <style>{`
+  <style>{`
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -437,6 +437,12 @@ const Login = () => {
           }
         }
 
+        /* Mobile: flatten card (no panel look) */
+        @media (max-width: 768px) {
+          .form-card {
+            border-radius: 8px;
+          }
+        }
         @media (max-width: 576px) {
           .login-visual-section {
             min-height: 250px;
@@ -452,8 +458,13 @@ const Login = () => {
              font-size: 1.5rem;
           }
           .form-card {
-            box-shadow: none;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 1.25rem 0.5rem !important;
+            max-width: 100% !important;
           }
+          .login-form-section { padding: 0 1rem 2rem; }
           .role-selector {
             flex-direction: column;
           }
