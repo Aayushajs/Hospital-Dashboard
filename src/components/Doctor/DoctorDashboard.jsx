@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import { FiCheckCircle } from "react-icons/fi";
 import DashboardHeader from "./DashboardHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
+// NOTE: Chart.js is heavy; it's still statically imported but we split it into its own chunk via manualChunks in vite.config.js.
+// If further reduction needed, convert to dynamic import inside a useEffect before rendering charts.
 import { Chart, registerables } from "chart.js";
 import DocterDashboardStats from "./DocterDashboardStats";
 import DocterDashboardAppointments from "../Doctor/DashboardAppointments";
