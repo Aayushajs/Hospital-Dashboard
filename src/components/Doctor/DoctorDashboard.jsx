@@ -1145,6 +1145,91 @@ const DoctorDashboardContent = () => {
             padding: 1rem;
           }
         }
+
+        /* Added styles to improve mobile filter layout and calendar look */
+        .date-filter-wrapper {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.45rem 0.75rem;
+          border-radius: 10px;
+          background: linear-gradient(180deg, rgba(15,52,96,0.9), rgba(10,30,60,0.85));
+        
+          min-width: 140px;
+        }
+
+        /* Style the native date input so it looks consistent and professional */
+        .date-filter-wrapper input[type="date"] {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          border: none;
+          color: #e9ecef;
+          font-size: 0.88rem;
+          padding: 0.15rem 0.25rem;
+          cursor: pointer;
+        }
+
+        /* Accent focus for date input */
+        .date-filter-wrapper input[type="date"]:focus {
+          outline: none;
+          box-shadow: 0 4px 12px rgba(77,124,254,0.12), 0 0 0 3px rgba(77,124,254,0.08);
+          border-radius: 8px;
+        }
+
+        /* Tweak the calendar icon (WebKit) to match theme */
+        .date-filter-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) sepia(0.05) saturate(0.8) hue-rotate(180deg) brightness(1.1);
+          opacity: 0.95;
+          cursor: pointer;
+          margin-left: 4px;
+        }
+
+        /* Firefox calendar icon tweak */
+        .date-filter-wrapper input[type="date"]::-moz-calendar-picker-indicator {
+          filter: invert(1) brightness(1.1);
+        }
+
+        /* Clear button inside date wrapper - keep subtle */
+        .clear-date {
+          background: transparent;
+          border: none;
+          color: #9fb0ff;
+          cursor: pointer;
+          padding: 0.15rem;
+          border-radius: 6px;
+        }
+        .clear-date:hover { color: #e6f0ff; background: rgba(77,124,254,0.06); }
+
+        /* Improve the stacked filters layout on small screens */
+        @media (max-width: 768px) {
+          .search-filter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            width: 100%;
+          }
+
+          .search-filter-container .search-input,
+          .search-filter-container .date-filter-wrapper,
+          .search-filter-container .status-filter {
+            width: 100%;
+          }
+
+          .table-controls {
+            width: 100%;
+            justify-content: space-between;
+            gap: 0.6rem;
+          }
+        }
+
+        /* For very small phones stack in single column */
+        @media (max-width: 420px) {
+          .search-filter-container {
+            grid-template-columns: 1fr;
+          }
+          table { min-width: 320px; }
+        }
       `}</style>
     </div>
   );

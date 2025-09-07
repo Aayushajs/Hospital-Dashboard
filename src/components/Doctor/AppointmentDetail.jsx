@@ -147,6 +147,7 @@ const AppointmentDetail = () => {
                   <span className="app-key">NIC</span>
                   <span className="app-value">{appointment.nic || 'N/A'}</span>
                 </div>
+                
                 <div className="app-item">
                   <span className="app-key">Has Visited Before</span>
                   <span className="app-value">{appointment.hasVisited ? 'Yes' : 'No'}</span>

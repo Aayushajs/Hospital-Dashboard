@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { GoTrash } from "react-icons/go";
 import { FiDownload, FiFileText, FiCheckCircle } from "react-icons/fi";
 import { FaIndianRupeeSign } from "react-icons/fa6";
@@ -26,6 +26,42 @@ const DocterDashboardAppointments = ({
   handleDeleteAppointment
 }) => {
   const navigate = useNavigate();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalAppointment, setModalAppointment] = useState(null);
+  const [modalFees, setModalFees] = useState("");
+  const [modalRemark, setModalRemark] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openFeesModal = (appointment) => {
+    setModalAppointment(appointment);
+    setModalFees(appointment.fees ?? "");
+    setModalRemark("");
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalAppointment(null);
+    setModalFees("");
+    setModalRemark("");
+  };
+
+  const saveModal = async () => {
+    if (!modalAppointment) return closeModal();
+    setSaving(true);
+    try {
+      // call parent handler - it should handle API update and toasts
+      const res = handleUpdateStatus(modalAppointment._id, modalAppointment.status, modalFees);
+      if (res && typeof res.then === 'function') await res;
+      // remark currently not sent to API; log for now
+      // TODO: if backend supports, extend handleUpdateStatus to accept remark
+      console.log('Remark saved locally:', modalRemark);
+    } catch (err) {
+      console.error(err);
+    }
+    setSaving(false);
+    closeModal();
+  };
   return (
     <div className="appointments-table">
       <div className="table-header">
@@ -147,19 +183,18 @@ const DocterDashboardAppointments = ({
                   </td>
                   <td>
                     <div className="fees-input">
-                      <FaIndianRupeeSign className="fees-icon" />
-                      <input
-                        type="number"
-                        value={appointment.fees || ""}
-                        onChange={(e) =>
-                          handleUpdateStatus(
-                            appointment._id,
-                            appointment.status,
-                            e.target.value
-                          )
-                        }
-                        placeholder="0"
-                      />
+                      <button
+                        type="button"
+                        className="fees-open-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openFeesModal(appointment);
+                        }}
+                        aria-label={`Edit fees for ${appointment.firstName} ${appointment.lastName}`}
+                      >
+                        <FaIndianRupeeSign className="fees-icon" />
+                        <span className="fees-value">{appointment.fees ?? 'Add'}</span>
+                      </button>
                     </div>
                   </td>
                   <td>
@@ -246,6 +281,69 @@ const DocterDashboardAppointments = ({
           </button>
         </div>
       )}
+
+      {modalOpen && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal" role="dialog" aria-modal="true" onClick={(e)=>e.stopPropagation()}>
+            <h3>Edit Fees & Remark</h3>
+            <div className="modal-row">
+              <label>Fees</label>
+              <input
+                type="number"
+                min="0"
+                value={modalFees}
+                onChange={(e)=>{
+                  const v = e.target.value;
+                  setModalFees(v === '' ? '' : Math.max(0, Number(v)));
+                }}
+                onKeyDown={(e)=>{ if(e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault(); }}
+                className="modal-input"
+                inputMode="numeric"
+              />
+            </div>
+            <div className="modal-row">
+              <label>Remark (optional)</label>
+              <textarea
+                value={modalRemark}
+                onChange={(e)=>setModalRemark(e.target.value)}
+                className="modal-textarea"
+                rows={4}
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={closeModal} disabled={saving}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveModal} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <style jsx>{`
+        /* Fees button */
+        .fees-open-btn { display:inline-flex; align-items:center; gap:0.4rem; background:#0f3460; color:#fff; border:1px solid #2d3748; padding:0.35rem 0.5rem; border-radius:6px; cursor:pointer; }
+        .fees-open-btn .fees-icon { font-size:0.95rem; }
+        .fees-open-btn .fees-value { font-size:0.9rem; }
+
+        /* Modal overlay + blur - professional theme */
+        .modal-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); background: rgba(2,6,23,0.55); z-index:1200; }
+        .modal { width: 460px; max-width: calc(100% - 40px); background: linear-gradient(180deg, #0b1220 0%, #0f1724 100%); color:#e6eef8; border-radius:12px; padding:1rem 1.25rem; }
+        .modal h3 { margin:0 0 0.6rem 0; font-size:1.05rem; letter-spacing:0.2px; color:#dbeafe; }
+  .modal-row { display:flex; flex-direction:column; gap:0.4rem; margin-bottom:0.8rem; overflow:hidden; }
+  .modal-input, .modal-textarea { width:100%; padding:0.6rem; border-radius:8px; border:1px solid rgba(100,116,139,0.12); background: rgba(15,23,42,0.6); color:#e6eef8; box-sizing:border-box; }
+  /* keep focus simple: no colored border or glow */
+  .modal-input:focus, .modal-textarea:focus { outline: none; box-shadow: none; border-color: rgba(100,116,139,0.12); }
+  /* hide native number input spinners */
+  .modal-input[type=number]::-webkit-outer-spin-button, .modal-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .modal-input[type=number] { -moz-appearance: textfield; }
+        .modal-textarea { resize:vertical; min-height:90px; }
+        .modal-actions { display:flex; justify-content:flex-end; gap:0.5rem; margin-top:0.25rem; overflow:hidden; }
+        .btn { padding:0.5rem 0.9rem; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+        .btn-primary { background: linear-gradient(90deg,#2563eb,#4f46e5); color:#fff; box-shadow: 0 6px 18px rgba(79,70,229,0.16); }
+        .btn-secondary { background:transparent; color:#cbd5e1; border:1px solid rgba(148,163,184,0.06); }
+        .modal label { font-size:0.85rem; color:#93c5fd; }
+        @media (max-width:480px) {
+          .modal { width: 92%; padding:0.75rem; }
+        }
+      `}</style>
     </div>
   );
 };

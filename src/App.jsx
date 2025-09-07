@@ -21,17 +21,18 @@ import DescriptionBill from "./components/MedicalDescriptions";
 import DoctorDashboard from "./components/Doctor/DoctorDashboard";
 import AppointmentDetail from "./components/Doctor/AppointmentDetail"; // new detail page
 import OfflineAnimation from "./components/OfflineAnimation";
+import Prescriptions from "./components/Doctor/Prescriptions";
 
 const App = () => {
-  const { 
-    isAuthenticated, 
+  const {
+    isAuthenticated,
     setIsAuthenticated,
     isDoctorAuthenticated,
     setIsDoctorAuthenticated,
-    admin, 
+    admin,
     setAdmin,
     doctor,
-    setDoctor
+    setDoctor,
   } = useContext(Context);
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -46,13 +47,13 @@ const App = () => {
       setIsOnline(false);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Cleanup listeners on component unmount
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -89,7 +90,15 @@ const App = () => {
       fetchAdmin();
       fetchDoctor();
     }
-  }, [isOnline, isAuthenticated, isDoctorAuthenticated, setAdmin, setDoctor, setIsAuthenticated, setIsDoctorAuthenticated]);
+  }, [
+    isOnline,
+    isAuthenticated,
+    isDoctorAuthenticated,
+    setAdmin,
+    setDoctor,
+    setIsAuthenticated,
+    setIsDoctorAuthenticated,
+  ]);
 
   if (!isOnline) {
     return <OfflineAnimation />;
@@ -99,13 +108,13 @@ const App = () => {
     <Router>
       {/* Show sidebar only for authenticated users */}
       {(isAuthenticated || isDoctorAuthenticated) && <Sidebar />}
-      
+
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
-        
+
         {/* Admin Routes */}
-    {isAuthenticated && (
+        {isAuthenticated && (
           <>
             <Route path="/" element={<Dashboard />} />
             <Route path="/doctor/addnew" element={<AddNewDoctor />} />
@@ -113,33 +122,44 @@ const App = () => {
             <Route path="/messages" element={<Messages />} />
             <Route path="/doctors" element={<Doctors />} />
             <Route path="/admin/profile" element={<ProfilePage />} />
-      <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/PatientsDashboard" element={<PatientsDashboard />} />
             <Route path="/description-bill" element={<DescriptionBill />} />
             <Route path="/description/:id" element={<DescriptionDashboard />} />
             <Route path="/ChatRoom" element={<ChatRoom />} />
           </>
         )}
-        
+
         {/* Doctor Routes */}
-    {isDoctorAuthenticated && (
+        {isDoctorAuthenticated && (
           <>
             <Route path="/" element={<DoctorDashboard />} />
             <Route path="/DocterDashboard" element={<DoctorDashboard />} />
-            <Route path="/doctor/appointment/:id" element={<AppointmentDetail />} />
-      <Route path="/doctor/profile" element={<ProfilePage />} />
-      <Route path="/profile" element={<ProfilePage />} />
+            <Route
+              path="/doctor/appointment/:id"
+              element={<AppointmentDetail />}
+            />
+            <Route path="/doctor/prescriptions/add" element={<Prescriptions />} />
+            <Route path="/doctor/profile" element={<ProfilePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </>
         )}
-        
+
         {/* Fallback route - redirect based on auth status */}
-        <Route path="*" element={
-          isAuthenticated ? <Dashboard /> : 
-          isDoctorAuthenticated ? <DoctorDashboard /> : 
-          <Login />
-        } />
+        <Route
+          path="*"
+          element={
+            isAuthenticated ? (
+              <Dashboard />
+            ) : isDoctorAuthenticated ? (
+              <DoctorDashboard />
+            ) : (
+              <Login />
+            )
+          }
+        />
       </Routes>
-      
+
       <ToastContainer position="top-center" />
     </Router>
   );

@@ -78,17 +78,30 @@ const Sidebar = () => {
 
   // Apply/remove body class so main content can use full width when collapsed
   useEffect(() => {
+    // Ensure the app knows sidebar utilities are available
     document.body.classList.add('sidebar-enabled');
+
+    // Keep a CSS var for the sidebar width so we can compute shifts centrally
+    const sidebarWidth = '280px';
+    document.documentElement.style.setProperty('--sidebar-width', sidebarWidth);
+
     if (!isMobile) {
       if (isCollapsedDesktop) {
         document.body.classList.add('sidebar-collapsed');
       } else {
         document.body.classList.remove('sidebar-collapsed');
       }
+    } else {
+      // always remove collapsed class on mobile to avoid desktop-only styles
+      document.body.classList.remove('sidebar-collapsed');
     }
-  // Update CSS variable for smoother, centralized layout shift
-  const shift = (!isMobile && !isCollapsedDesktop) ? '280px' : '0px';
-  document.documentElement.style.setProperty('--sidebar-shift', shift);
+
+    // When sidebar is visible on desktop, we want a small gutter on the right
+    // so the content doesn't butt tightly to the sidebar. Use calc(var(--sidebar-width) - 12px).
+    // When collapsed or on mobile (sidebar hidden), shift should be 0 so content uses full width.
+    const shift = (!isMobile && !isCollapsedDesktop) ? 'calc(var(--sidebar-width) - 12px)' : '0px';
+    document.documentElement.style.setProperty('--sidebar-shift', shift);
+
     return () => {
       document.body.classList.remove('sidebar-collapsed');
     };
@@ -124,6 +137,8 @@ const Sidebar = () => {
       setActiveLink("doctorMessages");
     } else if (path === "/doctor/medical-records") {
       setActiveLink("medicalRecords");
+    } else if (path === "/doctor/prescriptions/add") {
+      setActiveLink("prescriptions");
     } else {
       setActiveLink("");
     }
@@ -175,7 +190,7 @@ const Sidebar = () => {
     { icon: <FaUserInjured />, label: "My Patients", path: "/doctor/patients", key: "doctorPatients" },
     { icon: <AiFillMessage />, label: "Messages", path: "/doctor/messages", key: "doctorMessages" },
     { icon: <FaNotesMedical />, label: "Medical Records", path: "/doctor/medical-records", key: "medicalRecords" },
-    { icon: <MdMedicalServices />, label: "Prescriptions", path: "/doctor/prescriptions", key: "prescriptions" }
+    { icon: <MdMedicalServices />, label: "Prescriptions", path: "/doctor/prescriptions/add", key: "prescriptions" }
   ];
 
   // Get appropriate nav items based on user type
@@ -480,7 +495,7 @@ const Sidebar = () => {
 
       <style jsx="true">{`
 
-  :root { --sidebar-width:280px; --sidebar-shift:280px; }
+  :root { --sidebar-width:280px; --sidebar-shift: calc(var(--sidebar-width) - 12px); }
 
         /* Smooth margin shift for all primary sections across project */
   body.sidebar-enabled .profile-container,
@@ -509,12 +524,12 @@ const Sidebar = () => {
           color: #4d7cfe;
           font-weight: 500;
         }
-           .sidebar-container {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 280px;
-          height: 100vh;
+          .sidebar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
           background-color: #16213e;
           color: #e9ecef;
           z-index: 1001; /* Higher than overlay */
@@ -529,7 +544,7 @@ const Sidebar = () => {
         }
 
         /* Desktop collapse state */
-        .sidebar-container.collapsed-desktop { transform: translateX(-100%); }
+  .sidebar-container.collapsed-desktop { transform: translateX(calc(-1 * var(--sidebar-width))); }
 
         /* Floating opener when collapsed */
         .collapsed-desktop + .menu-toggle-desktop-opener { opacity:1; pointer-events:auto; }
